@@ -1,0 +1,158 @@
+---
+title: "Final project code"
+author: "Names"
+date: "11/16/2017"
+output: html_document
+---
+
+```{r message=FALSE}
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("curatedBreastData")
+
+library("curatedBreastData")
+library(SummarizedExperiment)
+library(Biobase)
+
+data(curatedBreastDataExprSetList)
+cbd <- curatedBreastDataExprSetList
+str(cbd[[1]])
+str <- unique(protocolData(cbd[[1]])$labelDescription)
+
+grepl("breast", str, ignore.case=T)
+
+
+#===================================# Getting the same dataset #=====================================#
+#===# apply filters
+samp.size <- sapply(1:length(cbd), function(i) nrow(protocolData(cbd[[i]])))
+cut1 <- samp.size > 30 # checking which/how many have at least 30 samples
+
+ #== making the first cut
+names.cut1 <- names(cbd)[cut1]
+cbd.cut1 <- cbd[names.cut1]
+
+all.t <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][2])
+datnCuts <- cbind(all.t, cut1) # all genes and which made first cut
+geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
+
+batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
+batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
+featureData(cbd[[1]])$probe
+
+namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])$datasetName)))
+
+
+
+dat1 <- subset(cbd, subset=c(cut1 == 1))
+
+ #== making the second cut -- what on earth is PAM50
+
+# seeing if this works...
+str(cbd[[1]])
+
+things <- featureData(cbd[[1]])$gene_symbol
+
+"GRB7" %in% levels(things)
+
+
+ # okay it does, implementing here
+gs0 <- c("GRB7 CEP55 MYBL2 KRT5 CDC20 UBE2C CDH3 EXO1 MELK MIA KRT14 BAG1 BIRC5 BLVRA CCNB1 CCNE1 CDC6 CENPF EGFR ERBB2 ESR1 FOXA1 FOXC1 KIF2C KRT17 MAPT MDM2 MKI67 MMP11 MYC PGR RRM2 SFRP1 SLC39A6 TYMS")
+gs <- unlist(strsplit(gs0, " "))
+length(gs)
+
+cut2 <- sapply(1:length(cbd), function(i) all(gs %in% featureData(cbd[[i]])$gene_symbol))
+  
+# summary of which experiments made which cuts
+datnCuts <- data.frame(all.t, cut1, cut2)
+datnCuts[["both.cuts"]] <- with(datnCuts, cut1*cut2)
+datnCuts[["sampsize"]] <- samp.size
+datnCuts[["real.cut"]] <- with(datnCuts, cut2*(sampsize > 47))
+datnCuts[["batch.id"]] <- batch.id
+datnCuts[["geo.plat.id"]] <- geo.plat.id
+
+datnCuts
+
+# dataset with only those experiments that made both cuts
+dat <- cbd[datnCuts$real.cut == 1]
+
+table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
+names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
+
+#===================================# Figure 6 #=====================================#
+# subtyping
+
+expr1 <- exprs(cbd[[1]])
+expr2 <- exprs(cbd[[2]])
+dim(expr1)
+dim(expr2)
+
+class(expr)
+dim(expr)
+colnames(expr)
+rownames(expr)
+
+jnk <- dat[[1]]
+jnk2 <- featureData(jnk)$gene_symbol %in% gs
+length(featureData(jnk)$gene_symbol[jnk2 == TRUE])
+unique(featureData(jnk)$gene_symbol[jnk2 == TRUE])
+rowVars(exprs(jnk[jnk2 == TRUE & featureData(jnk)$gene_symbol=="MMP11"]))
+length(featureData(jnk)$gene_symbol %in% gs)
+
+length(unique(featureData(jnk)$gene_symbol))
+
+#== instructions for removing duplicate genes_symbols
+# For duplicated gene symbols linked to different probes in an array, the probe linked to that
+# specific gene with the highest variance across all samples was kept.
+# Additional Files 2
+
+jnk.gs <- featureData(jnk)$gene_symbol
+
+jnk.vars <- apply(exprs(jnk), 1, var)
+
+thing <- data.frame(jnk.gs, jnk.vars)
+thing2 <- thing[thing$jnk.gs %in% gs,]
+is.max <- sapply(split(thing2, jnk.gs), function(x) x$jnk.vars == max(x$jnk.vars)) # get this to be an indicator of whether or not it is a max
+is.max <- with(thing2, sapply())
+
+dim(dat)
+
+#=== FUNCTION: data.ready
+# OBJECTIVE: for one dataset, this returns the 35 pam50 genes with the largest variance
+# INPUTS:  one dataset from dat
+# OUTPUT: dataset without replicates
+data.ready <- function(dat){
+  jnk <- dat
+  jnk2 <- featureData(jnk)$gene_symbol %in% gs
+
+  jnk.gs <- featureData(jnk)$gene_symbol
+  jnk.vars <- apply(exprs(jnk), 1, var)
+  
+  thing <- data.frame(jnk.gs, jnk.vars)
+  thing2 <- thing[thing$jnk.gs %in% gs,]
+
+  #=== FUNCTION: compare.to.max
+  # OBJECTIVE: compare the value in a row of a matrix to the max value in the cluster
+  # INPUTS: the dataset (data), the row index (i), the cluster variable (clust)
+  # OUTPUTS: indicator variable of whether the given row matches the cluster max
+  compare.to.max <- function(i, data=thing2, clust="jnk.gs"){
+    d <- data[[clust]]
+    c <- d[i]
+    max.c <- max(data[d == c,"jnk.vars"])
+    is.max <- as.numeric(data[i,"jnk.vars"] == max.c)
+    
+    return(is.max)
+  }
+  
+  is.max <- sapply(1:nrow(thing2), compare.to.max)
+  
+  thing3 <- data.frame(thing2, is.max)
+  
+  final0 <- jnk[jnk2==TRUE,]
+  final <- final0[thing3$is.max==1,]
+  return(final)
+}
+
+merp <- data.ready(dat[[1]])
+#===================================# Figure 7 #=====================================#
+```
+
+ 
