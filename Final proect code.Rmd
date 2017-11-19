@@ -35,28 +35,19 @@ cbd.cut1 <- cbd[names.cut1]
 
 all.t <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][2])
 datnCuts <- cbind(all.t, cut1) # all genes and which made first cut
-geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
+#geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
 
-batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
-batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
-featureData(cbd[[1]])$probe
+#batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
+#batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
+#featureData(cbd[[1]])$probe
 
-namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])$datasetName)))
-
+#namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])$datasetName)))
 
 
 dat1 <- subset(cbd, subset=c(cut1 == 1))
- #== making the second cut 
 
-# seeing if this works...
-str(cbd[[1]])
-
-things <- featureData(cbd[[1]])$gene_symbol
-
-"GRB7" %in% levels(things)
-
-
- # okay it does, implementing here
+#== making the second cut 
+# pam50 gene set
 gs0 <- c("GRB7 CEP55 MYBL2 KRT5 CDC20 UBE2C CDH3 EXO1 MELK MIA KRT14 BAG1 BIRC5 BLVRA CCNB1 CCNE1 CDC6 CENPF EGFR ERBB2 ESR1 FOXA1 FOXC1 KIF2C KRT17 MAPT MDM2 MKI67 MMP11 MYC PGR RRM2 SFRP1 SLC39A6 TYMS")
 gs <- unlist(strsplit(gs0, " "))
 length(gs)
@@ -75,12 +66,17 @@ datnCuts
 
 # dataset with only those experiments that made both cuts
 dat <- cbd[datnCuts$real.cut == 1]
-
-table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
-names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
 ```
 
-Analysis using filtered data 
+Below is a summary of the final analysis dataset 
+```{r}
+#Table 1: Summary of our dataset 
+table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
+names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
+table1
+```
+
+Below is project analysis using final filtered data 
 ```{r}
 #===================================# Figure 6 #=====================================#
 # subtyping
