@@ -19,7 +19,10 @@ str(cbd[[1]])
 str <- unique(protocolData(cbd[[1]])$labelDescription)
 
 grepl("breast", str, ignore.case=T)
+```
 
+To obtain the same dataset as the paper, we had to apply two filters: (1) datsets with at least 30 samples and (2) has at least the 35 genes in PAM50. 
+```{r}
 
 #===================================# Getting the same dataset #=====================================#
 #===# apply filters
@@ -43,8 +46,7 @@ namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])
 
 
 dat1 <- subset(cbd, subset=c(cut1 == 1))
-
- #== making the second cut -- what on earth is PAM50
+ #== making the second cut 
 
 # seeing if this works...
 str(cbd[[1]])
@@ -76,7 +78,10 @@ dat <- cbd[datnCuts$real.cut == 1]
 
 table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
 names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
+```
 
+Analysis using filtered data 
+```{r}
 #===================================# Figure 6 #=====================================#
 # subtyping
 
@@ -152,7 +157,26 @@ data.ready <- function(dat){
 }
 
 merp <- data.ready(dat[[1]])
-#===================================# Figure 7 #=====================================#
+```
+
+```{r}
+#===================================# Task 1 #=====================================#
+#fnding clusters of each study (17)
+
+
+#===================================# Task 2 #=====================================#
+#norm transform each study, concatenate, run hclust
+
+
+#===================================# Task 3 #=====================================#
+# Quantile Normalization each study, concatenate, run hclust 
+
+#===================================# Task 4 #=====================================#
+# Batch Mean Censoring each study, concatenate, run hclust
+
+#===================================# Task 5 #=====================================#
+#KM cures in Survival data in phenodata
+
 ```
 
  
