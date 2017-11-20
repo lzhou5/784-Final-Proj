@@ -134,7 +134,6 @@ data.ready <- function(dat){
   return(final)
 }
 
-merp <- data.ready(dat[[1]])
 # the unconcatenated final analysis data set
 data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   n.d <- featureData(d)$gene_symbol
@@ -147,6 +146,13 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
 
 # the naive concatenation of the final analysis data set
 data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
+
+
+par(mfrow=c(4, 4))
+for(i in 1:16)
+ hist(unlist(data.uncat[[i]]), main=paste("Study", i), xlab="counts")
+par(mfrow=c(1,1))
+
 ```
 
 ```{r}
@@ -157,12 +163,16 @@ library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
+<<<<<<< HEAD
 
 par(mfrow=c(3,1), mar=c(7,3,3,1))
+=======
+>>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
 
 ################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
 for(i in 1:1){
+par(mfrow=c(1,4), mar=c(7,3,3,1))
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
 
@@ -185,29 +195,30 @@ o.dend <- order.dendrogram(dend)
 
 #using mclust 
 BIC = mclustBIC(dat11)
-plot(BIC)
 mod1 = Mclust(dat11, x = BIC)
 
 
 ####plotting the dendrogram
-plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
-#label using vsd$id
-#labels(dend) <- dat1$id[o.dend]
 #color by mclust catebory
 labels_colors(dend) <- as.integer(mod1$classification[o.dend])
 
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
+
+#legend("bottom",c("Group1","Batch 6","Batch 7"),fill=c(1,2,3),pch=1,cex=0.5)
+
+
 ####plotting mclust 
-plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+plot(BIC)
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Mclust Classification for Study", all.t[i]))
 
 ####bargraph of muclust 
 str(mod1)
 a=table(mod1$classification)
-barplot(a, main=paste("Study", all.t[1], "mclust classifications"))
+barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
 }
 
-#should put it in bargraph way
-
 #############using mclust BIC 
+<<<<<<< HEAD
 # library(mclust)
 BIC = mclustBIC(dat11)
 par(mfrow=c(1,1))
@@ -217,6 +228,17 @@ mod1 = Mclust(dat11, x = BIC)
 plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
 str(mod1)
 table(mod1$classification)
+=======
+#library(mclust)
+#BIC = mclustBIC(dat11)
+#par(mfrow=c(1,1))
+#plot(BIC)
+
+#mod1 = Mclust(dat11, x = BIC)
+#plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+#str(mod1)
+#table(mod1$classification)
+>>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
 ```
 
 
@@ -224,12 +246,53 @@ table(mod1$classification)
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
 #normalize each study
-data.norm = lapply(1:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+data.norm <- vector("list", 17)
+data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+data.norm[[12]] <- data.uncat[[12]]
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 
 #=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+
+#Clustering steps
+clustering <- function(data){
+#par(mfrow=c(1,4))
+dat11=t(as.matrix(data))
+dists <- dist(dat11)
+    
+hc <- hclust(dists, method="complete")
+dend <- as.dendrogram(hc)
+
+o.dend <- order.dendrogram(dend)
+
+#using mclust 
+BIC = mclustBIC(dat11)
+mod1 = Mclust(dat11, x = BIC)
+
+####plotting the dendrogram
+#color by mclust catebory
+labels_colors(dend) <- as.integer(mod1$classification[o.dend])
+
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
+
+#legend("bottom",c("Group1","Batch 6","Batch 7"),fill=c(1,2,3),pch=1,cex=0.5)
+
+####plotting mclust 
+plot(BIC)
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Mclust Classification for Study", all.t[i]))
+
+####bargraph of muclust 
+str(mod1)
+a=table(mod1$classification)
+barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
+}
+
+###apply to norm transformed data
+clustering(data.normcat)
 
 #===================================# Task 3 #=====================================#
 <<<<<<< HEAD
@@ -258,7 +321,7 @@ batch.id.unlist = as.factor(unlist(batch.id.list))
 # length(batch.id.unlist)
 # ncol(data.ncat)
 filtered.dat.list <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
-data.bmc <- ComBat(data.ncat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
+data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
 
 #===================================# Task 5 #=====================================#
