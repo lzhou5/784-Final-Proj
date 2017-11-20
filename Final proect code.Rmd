@@ -195,26 +195,37 @@ plot(BIC)
 
 mod1 = Mclust(dat11, x = BIC)
 plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
-
+str(mod1)
+table(mod1$classification)
 ```
 
 
 ```{r}
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
-
+#normalize each study
+data.norm = lapply( 
+ datn1=as.data.frame(data.uncat[[1]])
+ ctsn=log2(datn1+1)
+)
 #=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #===================================# Task 3 #=====================================#
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
-
+library(preprocessCore)
+data.quant=normalize.quantiles(data.ncat,copy=TRUE)
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 
+#hclust with data.normcat
+
+#mclust
+
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
+
 
 #===================================# Task 5 #=====================================#
 # KM cures in Survival data in phenodata
