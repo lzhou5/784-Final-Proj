@@ -159,11 +159,11 @@ library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
-par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 ################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
 for(i in 1:1){
+par(mfrow=c(1,4), mar=c(7,3,3,1))
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
 
@@ -200,7 +200,7 @@ plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification"
 
 ####plotting mclust 
 plot(BIC)
-plot(mod1, what = "Mclust classification analysis for ", dimens=c(2,1), main= paste("Study", all.t[i]))
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Mclust Classification for Study", all.t[i]))
 
 ####bargraph of muclust 
 str(mod1)
@@ -234,7 +234,8 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #Clustering steps
 clustering <- function(data){
-dat11=t(data)
+#par(mfrow=c(1,4))
+dat11=t(as.matrix(data))
 dists <- dist(dat11)
     
 hc <- hclust(dists, method="complete")
@@ -246,7 +247,6 @@ o.dend <- order.dendrogram(dend)
 BIC = mclustBIC(dat11)
 mod1 = Mclust(dat11, x = BIC)
 
-
 ####plotting the dendrogram
 #color by mclust catebory
 labels_colors(dend) <- as.integer(mod1$classification[o.dend])
@@ -257,7 +257,7 @@ plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification"
 
 ####plotting mclust 
 plot(BIC)
-plot(mod1, what = "Mclust classification analysis for ", dimens=c(2,1), main= paste("Study", all.t[i]))
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Mclust Classification for Study", all.t[i]))
 
 ####bargraph of muclust 
 str(mod1)
@@ -266,7 +266,7 @@ barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i])
 }
 
 ###apply to norm transformed data
-
+clustering(data.normcat)
 
 #===================================# Task 3 #=====================================#
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
