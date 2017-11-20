@@ -252,7 +252,14 @@ data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
-data.ncat
+library(sva)
+batch.id.list = lapply(1:length(data.uncat), function(batch.id) rep(batch.id, ncol(data.uncat[[batch.id]])))
+batch.id.unlist = as.factor(unlist(batch.id.list))
+# length(batch.id.unlist)
+# ncol(data.ncat)
+filtered.dat.list <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
+data.bmc <- ComBat(data.ncat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
+  mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
 
 #===================================# Task 5 #=====================================#
 # KM curves in Survival data in phenodata
