@@ -163,6 +163,8 @@ dat1=t(as.matrix(data.uncat[[i]]))
 #calcualte distances of top 500 genes by variance 
   #rv <- rowVars(assay(vsd))
   #o <- order(rv,decreasing=TRUE)
+
+### do normtransform of counts
 dists <- dist(dat1)
     
 hc <- hclust(dists, method="complete")
@@ -201,7 +203,7 @@ plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #===================================# Task 3 #=====================================#
-# Quantile Normalization each study, concatenate, run hclust /mclust
+#concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
 
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
