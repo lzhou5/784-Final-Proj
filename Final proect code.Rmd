@@ -142,7 +142,7 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
   # TO DO: check that study id is a column in each element of data.uncat
 
 # the naive concatenation of the final analysis data set
-data.ncat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.uncat)
+data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
 ```
 
 ```{r}
