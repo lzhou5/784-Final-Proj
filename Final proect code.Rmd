@@ -103,7 +103,7 @@ data.ready <- function(dat){
   jnk2 <- featureData(jnk)$gene_symbol %in% gs
 
   jnk.gs <- featureData(jnk)$gene_symbol
-  jnk.vars <- apply(exprs(jnk), 1, var)
+  jnk.vars <- apply(exprs(jnk), 1, function(x) var(x, na.rm=TRUE))
   
   thing <- data.frame(jnk.gs, jnk.vars)
   thing2 <- thing[thing$jnk.gs %in% gs,]
@@ -139,6 +139,8 @@ merp <- data.ready(dat[[1]])
 data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   n.d <- featureData(d)$gene_symbol
                                                   d2 <- exprs(d)
+                                                  study.name <- phenoData(d)$datasetName
+                                                  colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
                                                   return(d2)})
   # TO DO: check that study id is a column in each element of data.uncat
@@ -154,12 +156,15 @@ library(matrixStats)
 library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
-par(mfrow=c(2,3), mar=c(7,3,3,1))
+library(mclust)
+
+par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 ################Using hclust method=complete as seen in class 
-for(i in 1:length(dat)){
+#replace 11 with length(dat) when fix dataset 12 and 13 
+for(i in 1:1){
 #obtain dataset for study 1
-dat1=t(as.matrix(data.uncat[[i]]))
+dat1=as.matrix(data.uncat[[i]])
 
 #variance stablizing transformation
   #vsd <- vst(dat1, nsub=35)
@@ -167,53 +172,87 @@ dat1=t(as.matrix(data.uncat[[i]]))
 #calcualte distances of top 500 genes by variance 
   #rv <- rowVars(assay(vsd))
   #o <- order(rv,decreasing=TRUE)
-dists <- dist(dat1)
+
+### do normtransform of counts
+dat11=log2(dat1+1)
+dat11=t(dat11)
+dists <- dist(dat11)
     
 hc <- hclust(dists, method="complete")
 dend <- as.dendrogram(hc)
 
 o.dend <- order.dendrogram(dend)
 
+#using mclust 
+BIC = mclustBIC(dat11)
+plot(BIC)
+mod1 = Mclust(dat11, x = BIC)
+
+
+####plotting the dendrogram
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
 #label using vsd$id
 #labels(dend) <- dat1$id[o.dend]
-#color by vsd$patient
-#labels_colors(dend) <- as.integer(vsd$patient[o.dend])
+#color by mclust catebory
+labels_colors(dend) <- as.integer(mod1$classification[o.dend])
 
-#plotting the dendrogram
-plot(dend, main=paste("Study", all.t[i])) #all.t contains study labels
+####plotting mclust 
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+
+####bargraph of muclust 
+str(mod1)
+a=table(mod1$classification)
+barplot(a, main=paste("Study", all.t[1], "mclust classifications"))
 }
 
 #should put it in bargraph way
 
 #############using mclust BIC 
-library(mclust)
+# library(mclust)
 BIC = mclustBIC(dat11)
 par(mfrow=c(1,1))
 plot(BIC)
 
 mod1 = Mclust(dat11, x = BIC)
 plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
-
+str(mod1)
+table(mod1$classification)
 ```
 
 
 ```{r}
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
+#normalize each study
+data.norm = lapply(1:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
 
 #=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #===================================# Task 3 #=====================================#
+<<<<<<< HEAD
 # Quantile Normalization each study, concatenate, run hclust /mclust
 source("https://bioconductor.org/biocLite.R")
 biocLite("preprocessCore")
+=======
+#concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
+#normalize.quantiles(x,copy=TRUE) package: PreprocessCore
+library(preprocessCore)
+data.quant=normalize.quantiles(data.ncat,copy=TRUE)
+>>>>>>> c1438f2c38d7667fd23a448dc4b99c8af2703df4
 
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
-data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
+data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
+
+#hclust with data.normcat
+
+#mclust
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
+data.ncat
 
 #===================================# Task 5 #=====================================#
 # KM curves in Survival data in phenodata
