@@ -172,16 +172,9 @@ par(mfrow=c(3,1), mar=c(7,3,3,1))
 ################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
 for(i in 1:1){
-par(mfrow=c(1,4), mar=c(7,3,3,1))
+par(mfrow=c(2,2), mar=c(7,3,3,1))
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
-
-#variance stablizing transformation
-  #vsd <- vst(dat1, nsub=35)
-  #vsd$id <- paste(vsd$treatment, vsd$patient, vsd$time, sep="_")
-#calcualte distances of top 500 genes by variance 
-  #rv <- rowVars(assay(vsd))
-  #o <- order(rv,decreasing=TRUE)
 
 ### do normtransform of counts
 dat11=log2(dat1+1)
@@ -260,7 +253,7 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #Clustering steps
 clustering <- function(data){
-#par(mfrow=c(1,4))
+par(mfrow=c(2,2))
 dat11=t(as.matrix(data))
 dists <- dist(dat11)
     
