@@ -133,9 +133,10 @@ data.ready <- function(dat){
 merp <- data.ready(dat[[1]])
 # the unconcatenated final analysis data set
 data.uncat <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
+  # TO DO: check that study id is a column in each element of data.uncat
 
 # the naive concatenation of the final analysis data set
-data.ncat <- 
+data.ncat <- Reduce(function(x,y) merge(x,y,all=T), data.uncat)
 ```
 
 ```{r}
@@ -191,11 +192,16 @@ plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]
 
 ```{r}
 #===================================# Task 2 #=====================================#
-# norm transform each study, concatenate, run hclust
+# norm transform each study, concatenate, run hclust/mclust
 
+#=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function
+data.normcat <- Reduce(function(x,y) merge(x,y,all=T), data.norm)
 
 #===================================# Task 3 #=====================================#
-# Quantile Normalization each study, concatenate, run hclust 
+# Quantile Normalization each study, concatenate, run hclust /mclust
+
+#data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
+data.normcat <- Reduce(function(x,y) merge(x,y,all=T), data.quant)
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
