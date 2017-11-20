@@ -135,6 +135,8 @@ merp <- data.ready(dat[[1]])
 data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   n.d <- featureData(d)$gene_symbol
                                                   d2 <- exprs(d)
+                                                  study.name <- phenoData(d)$datasetName
+                                                  colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
                                                   return(d2)})
   # TO DO: check that study id is a column in each element of data.uncat
