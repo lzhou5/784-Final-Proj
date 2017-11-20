@@ -132,7 +132,11 @@ data.ready <- function(dat){
 
 merp <- data.ready(dat[[1]])
 # the unconcatenated final analysis data set
-data.uncat <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
+data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
+                                                  n.d <- featureData(d)$gene_symbol
+                                                  d2 <- exprs(d)
+                                                  rownames(d2) <- n.d
+                                                  return(d2)})
   # TO DO: check that study id is a column in each element of data.uncat
 
 # the naive concatenation of the final analysis data set
