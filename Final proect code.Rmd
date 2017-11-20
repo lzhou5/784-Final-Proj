@@ -201,8 +201,6 @@ a=table(mod1$classification)
 barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
 }
 
-#should put it in bargraph way
-
 #############using mclust BIC 
 #library(mclust)
 #BIC = mclustBIC(dat11)
@@ -226,6 +224,42 @@ data.norm = lapply(1:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[
 
 #=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+
+#Clustering steps
+clustering <- function(data){
+dat11=t(data)
+dists <- dist(dat11)
+    
+hc <- hclust(dists, method="complete")
+dend <- as.dendrogram(hc)
+
+o.dend <- order.dendrogram(dend)
+
+#using mclust 
+BIC = mclustBIC(dat11)
+mod1 = Mclust(dat11, x = BIC)
+
+
+####plotting the dendrogram
+#color by mclust catebory
+labels_colors(dend) <- as.integer(mod1$classification[o.dend])
+
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
+
+#legend("bottom",c("Group1","Batch 6","Batch 7"),fill=c(1,2,3),pch=1,cex=0.5)
+
+####plotting mclust 
+plot(BIC)
+plot(mod1, what = "Mclust classification analysis for ", dimens=c(2,1), main= paste("Study", all.t[i]))
+
+####bargraph of muclust 
+str(mod1)
+a=table(mod1$classification)
+barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
+}
+
+###apply to norm transformed data
+
 
 #===================================# Task 3 #=====================================#
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
