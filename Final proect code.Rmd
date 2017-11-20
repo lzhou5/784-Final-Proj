@@ -142,6 +142,13 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
 
 # the naive concatenation of the final analysis data set
 data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
+
+
+par(mfrow=c(4, 4))
+for(i in 1:16)
+ hist(unlist(data.uncat[[i]]), main=paste("Study", i), xlab="counts")
+par(mfrow=c(1,1))
+
 ```
 
 ```{r}
