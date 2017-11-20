@@ -179,7 +179,6 @@ o.dend <- order.dendrogram(dend)
 
 #using mclust 
 BIC = mclustBIC(dat11)
-plot(BIC)
 mod1 = Mclust(dat11, x = BIC)
 
 
@@ -191,6 +190,7 @@ plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification"
 labels_colors(dend) <- as.integer(mod1$classification[o.dend])
 
 ####plotting mclust 
+plot(BIC)
 plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
 
 ####bargraph of muclust 
