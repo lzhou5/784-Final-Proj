@@ -208,6 +208,7 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #===================================# Task 3 #=====================================#
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
+#normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
