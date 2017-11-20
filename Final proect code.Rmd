@@ -216,8 +216,9 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
 data.quant=normalize.quantiles(data.ncat,copy=TRUE)
+
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
-data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
+data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 
 #hclust with data.normcat
 
