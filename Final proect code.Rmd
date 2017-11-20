@@ -103,7 +103,7 @@ data.ready <- function(dat){
   jnk2 <- featureData(jnk)$gene_symbol %in% gs
 
   jnk.gs <- featureData(jnk)$gene_symbol
-  jnk.vars <- apply(exprs(jnk), 1, var)
+  jnk.vars <- apply(exprs(jnk), 1, function(x) var(x, na.rm=TRUE))
   
   thing <- data.frame(jnk.gs, jnk.vars)
   thing2 <- thing[thing$jnk.gs %in% gs,]
@@ -218,8 +218,7 @@ table(mod1$classification)
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
 #normalize each study
-#replace 11 by length(dat) once dataset 12 and 13 get fixed
-data.norm = lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+data.norm = lapply(1:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 
