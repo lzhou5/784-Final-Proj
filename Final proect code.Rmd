@@ -130,7 +130,6 @@ data.ready <- function(dat){
   return(final)
 }
 
-merp <- data.ready(dat[[1]])
 # the unconcatenated final analysis data set
 data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   n.d <- featureData(d)$gene_symbol
@@ -152,6 +151,7 @@ library(matrixStats)
 library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
+library(mclust)
 par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 ################Using hclust method=complete as seen in class 
@@ -183,34 +183,36 @@ mod1 = Mclust(dat11, x = BIC)
 
 
 ####plotting the dendrogram
-plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
-#label using vsd$id
-#labels(dend) <- dat1$id[o.dend]
 #color by mclust catebory
 labels_colors(dend) <- as.integer(mod1$classification[o.dend])
 
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
+
+#legend("bottom",c("Group1","Batch 6","Batch 7"),fill=c(1,2,3),pch=1,cex=0.5)
+
+
 ####plotting mclust 
 plot(BIC)
-plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+plot(mod1, what = "Mclust classification analysis for ", dimens=c(2,1), main= paste("Study", all.t[i]))
 
 ####bargraph of muclust 
 str(mod1)
 a=table(mod1$classification)
-barplot(a, main=paste("Study", all.t[1], "mclust classifications"))
+barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
 }
 
 #should put it in bargraph way
 
 #############using mclust BIC 
-library(mclust)
-BIC = mclustBIC(dat11)
-par(mfrow=c(1,1))
-plot(BIC)
+#library(mclust)
+#BIC = mclustBIC(dat11)
+#par(mfrow=c(1,1))
+#plot(BIC)
 
-mod1 = Mclust(dat11, x = BIC)
-plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
-str(mod1)
-table(mod1$classification)
+#mod1 = Mclust(dat11, x = BIC)
+#plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+#str(mod1)
+#table(mod1$classification)
 ```
 
 
