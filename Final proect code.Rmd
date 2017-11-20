@@ -35,10 +35,10 @@ cbd.cut1 <- cbd[names.cut1]
 
 all.t <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][2])
 datnCuts <- cbind(all.t, cut1) # all genes and which made first cut
-#geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
+geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
 
-#batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
-#batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
+batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
+batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
 #featureData(cbd[[1]])$probe
 
 #namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])$datasetName)))
@@ -158,8 +158,55 @@ merp <- data.ready(dat[[1]])
 ```{r}
 #===================================# Task 1 #=====================================#
 #fnding clusters of each study (17)
+library(matrixStats)
+library(dendextend)
+library(RColorBrewer)
+library(DESeq2)
+par(mfrow=c(2,3), mar=c(7,3,3,1))
+
+################Using hclust method=complete as seen in class 
+for(i in 1:length(dat)){
+#obtain dataset for study 1
+dat1=exprs(data.ready(dat[[i]]))
+dat11=t(as.data.frame(dat1))
+
+#variance stablizing transformation
+  #vsd <- vst(dat1, nsub=35)
+  #vsd$id <- paste(vsd$treatment, vsd$patient, vsd$time, sep="_")
+#calcualte distances of top 500 genes by variance 
+  #rv <- rowVars(assay(vsd))
+  #o <- order(rv,decreasing=TRUE)
+dists <- dist(dat11)
+    
+hc <- hclust(dists, method="complete")
+dend <- as.dendrogram(hc)
+
+o.dend <- order.dendrogram(dend)
+
+#label using vsd$id
+#labels(dend) <- vsd$id[o.dend]
+#color by vsd$patient
+#labels_colors(dend) <- as.integer(vsd$patient[o.dend])
+
+#plotting the dendrogram
+plot(dend, main=paste("Study", all.t[i])) #all.t contains study labels
+}
+
+#should put it in bargraph way
+
+#############using mclust BIC 
+library(mclust)
+BIC = mclustBIC(dat11)
+par(mfrow=c(1,1))
+plot(BIC)
+
+mod1 = Mclust(dat11, x = BIC)
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+
+```
 
 
+```{r}
 #===================================# Task 2 #=====================================#
 #norm transform each study, concatenate, run hclust
 
