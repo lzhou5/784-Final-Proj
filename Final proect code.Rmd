@@ -152,10 +152,11 @@ library(matrixStats)
 library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
-par(mfrow=c(2,3), mar=c(7,3,3,1))
+par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 ################Using hclust method=complete as seen in class 
-for(i in 1:length(dat)){
+#replace 11 with length(dat) when fix dataset 12 and 13 
+for(i in 1:1){
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
 
@@ -176,13 +177,26 @@ dend <- as.dendrogram(hc)
 
 o.dend <- order.dendrogram(dend)
 
+#using mclust 
+BIC = mclustBIC(dat11)
+plot(BIC)
+mod1 = Mclust(dat11, x = BIC)
+
+
+####plotting the dendrogram
+plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
 #label using vsd$id
 #labels(dend) <- dat1$id[o.dend]
-#color by vsd$patient
-#labels_colors(dend) <- as.integer(vsd$patient[o.dend])
+#color by mclust catebory
+labels_colors(dend) <- as.integer(mod1$classification[o.dend])
 
-#plotting the dendrogram
-plot(dend, main=paste("clusters for Study", all.t[i])) #all.t contains study labels
+####plotting mclust 
+plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
+
+####bargraph of muclust 
+str(mod1)
+a=table(mod1$classification)
+barplot(a, main=paste("Study", all.t[1], "mclust classifications"))
 }
 
 #should put it in bargraph way
@@ -204,10 +218,11 @@ table(mod1$classification)
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
 #normalize each study
-data.norm = lapply( 
- datn1=as.data.frame(data.uncat[[1]])
- ctsn=log2(datn1+1)
-)
+#replace 11 by length(dat) once dataset 12 and 13 get fixed
+data.norm = lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+
 #=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
