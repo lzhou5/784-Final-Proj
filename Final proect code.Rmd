@@ -206,6 +206,8 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 #===================================# Task 3 #=====================================#
 # Quantile Normalization each study, concatenate, run hclust /mclust
+source("https://bioconductor.org/biocLite.R")
+biocLite("preprocessCore")
 
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
@@ -214,7 +216,7 @@ data.normcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 # Batch Mean Censoring each study, concatenate, run hclust
 
 #===================================# Task 5 #=====================================#
-# KM cures in Survival data in phenodata
+# KM curves in Survival data in phenodata
 
 ```
 
