@@ -87,11 +87,11 @@ Below is project analysis using final filtered data
 # specific gene with the highest variance across all samples was kept.
 # Additional Files 2
 
-jnk.gs <- featureData(jnk)$gene_symbol
-jnk.vars <- apply(exprs(jnk), 1, var)
-
-thing <- data.frame(jnk.gs, jnk.vars)
-thing2 <- thing[thing$jnk.gs %in% gs,]
+# jnk.gs <- featureData(jnk)$gene_symbol
+# jnk.vars <- apply(exprs(jnk), 1, var)
+# 
+# thing <- data.frame(jnk.gs, jnk.vars)
+# thing2 <- thing[thing$jnk.gs %in% gs,]
 
 
 #=== FUNCTION: data.ready
@@ -127,6 +127,10 @@ data.ready <- function(dat){
   
   final0 <- jnk[jnk2==TRUE,]
   final <- final0[thing3$is.max==1,]
+  
+  # o <- match(gs, thing3$jnk.gs[thing3$is.max==1])
+  # final <- final[o,]
+  # rownames(final) <- gs
   return(final)
 }
 
