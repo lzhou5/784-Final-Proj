@@ -155,7 +155,7 @@ par(mfrow=c(2,3), mar=c(7,3,3,1))
 ################Using hclust method=complete as seen in class 
 for(i in 1:length(dat)){
 #obtain dataset for study 1
-dat1=t(as.matrix(data.uncat[[i]]))
+dat1=as.matrix(data.uncat[[i]])
 
 #variance stablizing transformation
   #vsd <- vst(dat1, nsub=35)
@@ -165,7 +165,9 @@ dat1=t(as.matrix(data.uncat[[i]]))
   #o <- order(rv,decreasing=TRUE)
 
 ### do normtransform of counts
-dists <- dist(dat1)
+dat11=log2(dat1+1)
+dat11=t(dat11)
+dists <- dist(dat11)
     
 hc <- hclust(dists, method="complete")
 dend <- as.dendrogram(hc)
@@ -178,7 +180,7 @@ o.dend <- order.dendrogram(dend)
 #labels_colors(dend) <- as.integer(vsd$patient[o.dend])
 
 #plotting the dendrogram
-plot(dend, main=paste("Study", all.t[i])) #all.t contains study labels
+plot(dend, main=paste("clusters for Study", all.t[i])) #all.t contains study labels
 }
 
 #should put it in bargraph way
