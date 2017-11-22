@@ -87,11 +87,11 @@ Below is project analysis using final filtered data
 # specific gene with the highest variance across all samples was kept.
 # Additional Files 2
 
-# jnk.gs <- featureData(jnk)$gene_symbol
-# jnk.vars <- apply(exprs(jnk), 1, var)
-# 
-# thing <- data.frame(jnk.gs, jnk.vars)
-# thing2 <- thing[thing$jnk.gs %in% gs,]
+jnk.gs <- featureData(jnk)$gene_symbol
+jnk.vars <- apply(exprs(jnk), 1, var)
+
+thing <- data.frame(jnk.gs, jnk.vars)
+thing2 <- thing[thing$jnk.gs %in% gs,]
 
 
 #=== FUNCTION: data.ready
@@ -127,10 +127,6 @@ data.ready <- function(dat){
   
   final0 <- jnk[jnk2==TRUE,]
   final <- final0[thing3$is.max==1,]
-  
-  # o <- match(gs, thing3$jnk.gs[thing3$is.max==1])
-  # final <- final[o,]
-  # rownames(final) <- gs
   return(final)
 }
 
@@ -163,15 +159,9 @@ library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
-<<<<<<< HEAD
 
-par(mfrow=c(3,1), mar=c(7,3,3,1))
-=======
->>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
-
-################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
-for(i in 1:1){
+for(i in 1:2){
 par(mfrow=c(2,2), mar=c(7,3,3,1))
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
@@ -211,17 +201,6 @@ barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i])
 }
 
 #############using mclust BIC 
-<<<<<<< HEAD
-# library(mclust)
-BIC = mclustBIC(dat11)
-par(mfrow=c(1,1))
-plot(BIC)
-
-mod1 = Mclust(dat11, x = BIC)
-plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
-str(mod1)
-table(mod1$classification)
-=======
 #library(mclust)
 #BIC = mclustBIC(dat11)
 #par(mfrow=c(1,1))
@@ -231,7 +210,6 @@ table(mod1$classification)
 #plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
 #str(mod1)
 #table(mod1$classification)
->>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
 ```
 
 
@@ -239,12 +217,7 @@ table(mod1$classification)
 #===================================# Task 2 #=====================================#
 # norm transform each study, concatenate, run hclust/mclust
 #normalize each study
-data.norm <- vector("list", 17)
-data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
-                                              ctsn=log2(datn1+1)
-                                                  return(ctsn)})
-data.norm[[12]] <- data.uncat[[12]]
-data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+data.norm = lapply(1:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 
@@ -288,37 +261,22 @@ barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i])
 clustering(data.normcat)
 
 #===================================# Task 3 #=====================================#
-<<<<<<< HEAD
-# Quantile Normalization each study, concatenate, run hclust /mclust
-source("https://bioconductor.org/biocLite.R")
-biocLite("preprocessCore")
-=======
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
-#normalize.quantiles(x,copy=TRUE) package: PreprocessCore
-library(preprocessCore)
-data.quant=normalize.quantiles(data.ncat,copy=TRUE)
->>>>>>> c1438f2c38d7667fd23a448dc4b99c8af2703df4
-
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 
-#hclust with data.normcat
+#normalize.quantiles(x,copy=TRUE) package: PreprocessCore
+library(preprocessCore)
+data.quant=normalize.quantiles(data.ncat,copy=TRUE)
 
-#mclust
+#clustering function 
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
-library(sva)
-batch.id.list = lapply(1:length(data.uncat), function(batch.id) rep(batch.id, ncol(data.uncat[[batch.id]])))
-batch.id.unlist = as.factor(unlist(batch.id.list))
-# length(batch.id.unlist)
-# ncol(data.ncat)
-filtered.dat.list <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
-data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
-  mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
+
 
 #===================================# Task 5 #=====================================#
-# KM curves in Survival data in phenodata
+# KM cures in Survival data in phenodata
 
 ```
 
