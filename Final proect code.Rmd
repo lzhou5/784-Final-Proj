@@ -279,12 +279,8 @@ data.norm[[12]] <- data.uncat[[12]]
 data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
-
-data.norm1 <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
-                                              ctsn=log2(datn1+1)
-                                                  return(ctsn)})
 #concatonate the normtransformed datasets
-data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm1)
+data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
 
 ###apply function to norm transformed data
 clustering(data.normcat)
