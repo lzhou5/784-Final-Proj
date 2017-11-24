@@ -316,7 +316,7 @@ batch.id.unlist = as.factor(unlist(batch.id.list))
 filtered.dat.list <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
 data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
-
+clustering(data.bmc)
 #===================================# Task 5 #=====================================#
 # KM curves in Survival data in phenodata
 
