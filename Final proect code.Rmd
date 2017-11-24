@@ -144,9 +144,27 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   return(d2)})
   # TO DO: check that study id is a column in each element of data.uncat
 
+# there are na values in the 12th and 13th study
+# find where the na values are and remove those
+# 12
+id.na.12 = which(is.na(data.uncat[[12]]))
+# rowid.na.12 = (id.na.12 - 1)%%35 + 1
+# col id of the na values
+colid.na.12 = ceiling(id.na.12/35)
+
+# remove the columns with na values
+data.uncat[[12]] = data.uncat[[12]][, -unique(colid.na.12)]
+
+# 13
+id.na.13 = which(is.na(data.uncat[[13]]))
+# rowid.na.13 = (id.na.13 - 1)%%35 + 1
+colid.na.13 = ceiling(id.na.13/35)
+data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
+
+
 # the naive concatenation of the final analysis data set
 data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
-
+# 
 
 par(mfrow=c(4, 4))
 for(i in 1:16)
@@ -280,7 +298,8 @@ data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(dat
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 #concatonate the normtransformed datasets
-data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+# data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+data.normcat <- do.call(cbind, data.norm)
 
 ###apply function to norm transformed data
 clustering(data.normcat)
@@ -311,9 +330,7 @@ data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
 library(sva)
 batch.id.list = lapply(1:length(data.uncat), function(batch.id) rep(batch.id, ncol(data.uncat[[batch.id]])))
 batch.id.unlist = as.factor(unlist(batch.id.list))
-# length(batch.id.unlist)
-# ncol(data.ncat)
-filtered.dat.list <- lapply(1:length(dat), function(i) data.ready(dat[[i]]))
+
 data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
 clustering(data.bmc)
