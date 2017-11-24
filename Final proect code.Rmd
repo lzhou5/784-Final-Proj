@@ -142,7 +142,7 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
                                                   return(d2)})
-  # TO DO: check that study id is a column in each element of data.uncat
+  # TO DO: check that study id is a column in each element of data.uncat
 
 # the naive concatenation of the final analysis data set
 data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
@@ -163,11 +163,8 @@ library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
-<<<<<<< HEAD
 
 par(mfrow=c(3,1), mar=c(7,3,3,1))
-=======
->>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
 
 ################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
@@ -211,7 +208,7 @@ barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i])
 }
 
 #############using mclust BIC 
-<<<<<<< HEAD
+
 # library(mclust)
 BIC = mclustBIC(dat11)
 par(mfrow=c(1,1))
@@ -221,7 +218,7 @@ mod1 = Mclust(dat11, x = BIC)
 plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
 str(mod1)
 table(mod1$classification)
-=======
+
 #library(mclust)
 #BIC = mclustBIC(dat11)
 #par(mfrow=c(1,1))
@@ -231,27 +228,12 @@ table(mod1$classification)
 #plot(mod1, what = "classification", dimens=c(2,1), main= paste("Study", all.t[1]))
 #str(mod1)
 #table(mod1$classification)
->>>>>>> d99cbf47b5efbcc32eb6e0ef5b525d90699b9c12
+
 ```
 
-
+We create the function for the following analysis on the concatonated datasets
 ```{r}
-#===================================# Task 2 #=====================================#
-# norm transform each study, concatenate, run hclust/mclust
-#normalize each study
-data.norm <- vector("list", 17)
-data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
-                                              ctsn=log2(datn1+1)
-                                                  return(ctsn)})
-data.norm[[12]] <- data.uncat[[12]]
-data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
-                                              ctsn=log2(datn1+1)
-                                                  return(ctsn)})
-
-#=data.norm <- lapply(data.uncat, ****) # QUESTION: what was the norm transform function --normTransform(object, f = log2, pc = 1)
-data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
-
-#Clustering steps
+#Function runnign mclust and hclust
 clustering <- function(data){
 par(mfrow=c(2,2))
 dat11=t(as.matrix(data))
@@ -283,21 +265,39 @@ str(mod1)
 a=table(mod1$classification)
 barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
 }
+```
 
-###apply to norm transformed data
+```{r}
+#===================================# Task 2 #=====================================#
+# norm transform each study, concatenate, run hclust/mclust
+#normalize each study
+data.norm <- vector("list", 17)
+data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+data.norm[[12]] <- data.uncat[[12]]
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+#concatonate the normtransformed datasets
+data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+
+###apply function to norm transformed data
 clustering(data.normcat)
+```
 
+```{r}
 #===================================# Task 3 #=====================================#
-<<<<<<< HEAD
+
 # Quantile Normalization each study, concatenate, run hclust /mclust
 source("https://bioconductor.org/biocLite.R")
 biocLite("preprocessCore")
-=======
+
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
 data.quant=normalize.quantiles(data.ncat,copy=TRUE)
->>>>>>> c1438f2c38d7667fd23a448dc4b99c8af2703df4
+
 
 #data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
 data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
@@ -319,7 +319,4 @@ data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots 
 clustering(data.bmc)
 #===================================# Task 5 #=====================================#
 # KM curves in Survival data in phenodata
-
 ```
-
- 
