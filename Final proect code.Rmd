@@ -186,7 +186,7 @@ par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 ################Using hclust method=complete as seen in class 
 #replace 11 with length(dat) when fix dataset 12 and 13 
-for(i in 1:1){
+for(i in 1:17){
 par(mfrow=c(2,2), mar=c(7,3,3,1))
 #obtain dataset for study 1
 dat1=as.matrix(data.uncat[[i]])
