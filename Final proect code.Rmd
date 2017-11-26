@@ -163,7 +163,8 @@ data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
 
 
 # the naive concatenation of the final analysis data set
-data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
+# data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
+data.ncat <- do.call(cbind, data.uncat)
 # 
 
 par(mfrow=c(4, 4))
@@ -192,8 +193,14 @@ par(mfrow=c(2,2), mar=c(7,3,3,1))
 dat1=as.matrix(data.uncat[[i]])
 
 ### do normtransform of counts
-dat11=log2(dat1+1)
-dat11=t(dat11)
+if (i != 12){ # the 12th one is already normalized
+  dat11=log2(dat1+1)
+  dat11=t(dat11)
+}else{
+  dat11 = dat1
+  dat11 = t(dat11)
+}
+
 dists <- dist(dat11)
     
 hc <- hclust(dists, method="complete")
