@@ -141,9 +141,8 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   study.name <- phenoData(d)$datasetName
                                                   colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
-                                                  return(d2)})
-  # TO DO: check that study id is a column in each element of data.uncat
-
+                                                  return(d2)})
+## NOTE:!!! This is something I corrected for in the clustering2 function​
 # there are na values in the 12th and 13th study
 # find where the na values are and remove those
 # 12
@@ -235,6 +234,50 @@ str(mod1)
 a=table(mod1$classification)
 barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
 }
+
+
+# FUNCTION: clustering2
+# OBJECTIVE: to create 4 plots detailing results of hclust (colored by mclust results), 
+#            # clusters for mclust determined by BIC,
+#            mclust classification and centroids in 2-D,
+#            and number of samples in each mclust cluster
+# INPUTS: dataset and data.type (what type of transformation was used)
+# OUTPUS: 2x2 plot of 4 elements and mclust object
+clustering2 <- function(data, data.type){
+  par(mfrow=c(2,2))
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  dists <- dist(dat11)
+  
+  hc <- hclust(dists, method="complete")
+  dend <- as.dendrogram(hc)
+  o.dend <- order.dendrogram(dend)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+  
+  
+  ####plotting the dendrogram
+  #color by mclust catebory
+  labels_colors(dend) <- cols[mod1$classification[o.dend]]
+  plot(dend, main=paste("Heuristic Clustering of\n", data.type, "Data\nby mclust classification")) #all.t contains study labels
+  
+
+  ####plotting mclust 
+  plot(mod.BIC)
+  title("Number of Components\nSelected by BIC")
+  plot(mod1, what = "classification", dimens=c(2,1), main="", col=cols)
+  title("Mclust Classification and Centroids")
+  
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main="Number of Samples\nin Each mclust Class", ylim=c(0,nrow(dat11)), col=cols)
+  return(mod1)
+}
+
 ```
 
 ```{r}
@@ -293,15 +336,15 @@ biocLite("preprocessCore")
 #concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
-data.quant=normalize.quantiles(data.ncat,copy=TRUE)
 
+# performing quantile normalization on each study
+data.quant <- lapply(1:length(data.uncat), function(i) normalize.quantiles(data.uncat[[i]], copy=TRUE))
 
-#data.quant <- lapply(data.uncat, ****) # QUESTION: what is the bioconductor package for quantile norm?
-data.qnormcat <- Reduce(function(x,y) merge(x,y,all=T, y=0), data.quant)
+# merging them into one concatenated dataset
+data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
-#hclust with data.normcat
-
-#mclust
+# clustering with hclust and mclust
+c <- clustering2(data.qnormcat, "Quantile Normalized")
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
