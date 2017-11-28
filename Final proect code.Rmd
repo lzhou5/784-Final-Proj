@@ -319,7 +319,7 @@ data.norm[14:17]<- lapply(14:length(dat), function(i) {datn1 <-as.data.frame(dat
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 #concatonate the normtransformed datasets
-# data.normcat <- Reduce(function(x,y) merge(x,y,all=T, by=0), data.norm)
+# data.normcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.norm)
 data.normcat <- do.call(cbind, data.norm)
 
 ###apply function to norm transformed data
@@ -340,6 +340,11 @@ library(preprocessCore)
 # performing quantile normalization on each study
 data.quant <- lapply(1:length(data.uncat), function(i) normalize.quantiles(data.uncat[[i]], copy=TRUE))
 
+par(mfrow=c(4, 4))
+for(i in 1:16)
+ hist(unlist(data.quant[[i]]), main=paste("Study", i), xlab="counts")
+par(mfrow=c(1,1))
+
 # merging them into one concatenated dataset
 data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
@@ -348,13 +353,38 @@ c <- clustering2(data.qnormcat, "Quantile Normalized")
 
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
+# log2 transform the data except for the 12th study since it's already normalized
+data.norm <- vector("list", 17)
+data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+data.norm[[12]] <- data.uncat[[12]]
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+# concatenate the 17 log2 normalized datasets
+data.normcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.norm)
+
+# calculate the batch mean with respect to the 35 genes
+data.rowmean = lapply(data.norm, function(data) apply(data, 1, mean))
+# subtract the mean
+data.bmcuncat = lapply(1:length(data.norm), function(ix) data.norm[[ix]] - data.rowmean[[ix]])
+# concatenate the 17 bmc normalized dataset
+data.bmccat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.bmcuncat)
+clustering2(data.bmccat, "BMC")
+
+# ComBat: concatenate the norm transformed data (data.normcat) and the quantile normalized data (data.qnormcat) and then run ComBat on the data set to adjust for batch effects, treat each study as a known batch.
 library(sva)
 batch.id.list = lapply(1:length(data.uncat), function(batch.id) rep(batch.id, ncol(data.uncat[[batch.id]])))
 batch.id.unlist = as.factor(unlist(batch.id.list))
 
-data.bmc <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
+data.normComBat <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
-clustering(data.bmc)
+clustering2(data.normComBat, "normComBat")
+
+# data.qnormComBat <- ComBat(data.qnormcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
+#   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
+# clustering2(data.qnormComBat, "qnormComBat")
 #===================================# Task 5 #=====================================#
 # KM curves in Survival data in phenodata
 ```
