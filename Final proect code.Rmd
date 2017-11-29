@@ -166,9 +166,10 @@ data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
 data.ncat <- do.call(cbind, data.uncat)
 # 
 
-par(mfrow=c(4, 4))
+par(mfrow=c(4, 4), mar=c(5,3,3,1))
 for(i in 1:16)
- hist(unlist(data.uncat[[i]]), main=paste("Study", i), xlab="counts")
+ hist(unlist(data.uncat[[i]]), main=paste("Study", all.t[[i]]), xlab="counts")
+  hist(unlist(data.uncat[[17]]), main=paste("Study", all.t[[17]]), xlab="counts")
 par(mfrow=c(1,1))
 
 ```
@@ -180,7 +181,7 @@ library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
-<<<<<<< HEAD
+
 
 par(mfrow=c(3,1), mar=c(7,3,3,1))
 
@@ -199,18 +200,17 @@ if (i != 12){ # the 12th one is already normalized
   dat11 = dat1
   dat11 = t(dat11)
 }
+}
 
-=======
+
 #Function runnign mclust and hclust
 clustering <- function(data){
 par(mfrow=c(2,2))
 dat11=t(as.matrix(data))
->>>>>>> bcc6d8b2544ea6da7a46e440599311fe369e8b27
+
 dists <- dist(dat11)
-    
 hc <- hclust(dists, method="complete")
 dend <- as.dendrogram(hc)
-
 o.dend <- order.dendrogram(dend)
 
 #using mclust 
@@ -278,6 +278,42 @@ clustering2 <- function(data, data.type){
   return(mod1)
 }
 
+##with log2 transform
+clustering3 <- function(data, data.type){
+  par(mfrow=c(2,2))
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  dat11=log2(dat11+1)
+  dists <- dist(dat11)
+  
+  hc <- hclust(dists, method="complete")
+  dend <- as.dendrogram(hc)
+  o.dend <- order.dendrogram(dend)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+  
+  
+  ####plotting the dendrogram
+  #color by mclust catebory
+  labels_colors(dend) <- cols[mod1$classification[o.dend]]
+  plot(dend, main=paste("Heuristic Clustering of\n", data.type, "Data\nby mclust classification")) #all.t contains study labels
+  
+
+  ####plotting mclust 
+  plot(mod.BIC)
+  title("Number of Components\nSelected by BIC")
+  plot(mod1, what = "classification", dimens=c(2,1), main="", col=cols)
+  title("Mclust Classification and Centroids")
+  
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main="Number of Samples\nin Each mclust Class", ylim=c(0,nrow(dat11)), col=cols)
+  return(mod1)
+}
 ```
 
 ```{r}
@@ -287,14 +323,11 @@ par(mfrow=c(3,1), mar=c(7,3,3,1))
 
 for(i in 1:11){
   dat1=as.matrix(data.uncat[[i]])
-### do normtransform of counts
-dat11=log2(dat1+1)
-dat11=t(dat11)
-  clustering(dat11)
+  clustering3(dat1, "NormTransform")
 }
 
-clustering(data.uncat[[12]])
-clustering(data.uncat[[13]])
+clustering2(data.uncat[[12]], "log Transform ")
+clustering3(data.uncat[[1]], "log Transform")
 
 for(i in 14:17){
   dat1=as.matrix(data.uncat[[i]])
@@ -302,6 +335,59 @@ for(i in 14:17){
 trandat=log2(dat1+1)
   clustering(trandat)
 }
+
+### outputting bar plot for all 17 studies
+par(mfrow=c(3,4), mar=c(5,3,3,1))
+for(i in 1:11){
+  data=data.uncat[[i]]
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  dat11=log2(dat11+1)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
+  }
+
+for(i in 12:13){
+  data=data.uncat[[i]]
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
+}
+
+for(i in 14:17){
+  data=data.uncat[[i]]
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  dat11=log2(dat11+1)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
+  }
+
 ```
 
 
@@ -323,7 +409,7 @@ data.norm[14:17]<- lapply(14:length(dat), function(i) {datn1 <-as.data.frame(dat
 data.normcat <- do.call(cbind, data.norm)
 
 ###apply function to norm transformed data
-clustering(data.normcat)
+clustering2(data.normcat, "Norm Transform")
 ```
 
 ```{r}
