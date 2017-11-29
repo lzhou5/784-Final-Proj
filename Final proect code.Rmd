@@ -4,7 +4,15 @@ author: "Names"
 date: "11/16/2017"
 output: html_document
 ---
+# Introduction 
 
+Background 
+
+CoiNcide Paper Reivew
+
+Project Objectives
+
+# Data Managment 
 ```{r message=FALSE}
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("curatedBreastData")
@@ -23,7 +31,6 @@ grepl("breast", str, ignore.case=T)
 
 To obtain the same dataset as the paper, we had to apply two filters: (1) datsets with at least 30 samples and (2) has at least the 35 genes in PAM50. 
 ```{r}
-
 #===================================# Getting the same dataset #=====================================#
 #===# apply filters
 samp.size <- sapply(1:length(cbd), function(i) nrow(protocolData(cbd[[i]])))
@@ -75,6 +82,8 @@ table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sam
 names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
 table1
 ```
+
+# Data Analysis 
 
 Below is project analysis using final filtered data 
 ```{r}
@@ -316,6 +325,7 @@ clustering3 <- function(data, data.type){
 }
 ```
 
+# Task 1 
 ```{r}
 #===================================# Task 1 #=====================================#
 #fnding clusters of each study (17)
@@ -390,6 +400,7 @@ for(i in 14:17){
 
 ```
 
+#Task 2 
 
 ```{r}
 #===================================# Task 2 #=====================================#
@@ -412,6 +423,7 @@ data.normcat <- do.call(cbind, data.norm)
 clustering2(data.normcat, "Norm Transform")
 ```
 
+#Task 3 
 ```{r}
 #===================================# Task 3 #=====================================#
 
@@ -436,7 +448,10 @@ data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
 # clustering with hclust and mclust
 c <- clustering2(data.qnormcat, "Quantile Normalized")
+```
 
+# Task 4 
+```{r}
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
 # log2 transform the data except for the 12th study since it's already normalized
@@ -471,7 +486,12 @@ clustering2(data.normComBat, "normComBat")
 # data.qnormComBat <- ComBat(data.qnormcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
 #   mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
 # clustering2(data.qnormComBat, "qnormComBat")
-#===================================# Task 5 #=====================================#
-# KM curves in Survival data in phenodata
 ```
 
+#Task 5 
+```{r}
+#ComBat transform 
+``` 
+
+# Summary of Results 
+Comparison to Figure 6 of paper 
