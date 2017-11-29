@@ -12,6 +12,8 @@ CoiNcide Paper Reivew
 
 Project Objectives
 
+Figure 6 Discussion
+
 # Data Managment 
 ```{r message=FALSE}
 #source("https://bioconductor.org/biocLite.R")
