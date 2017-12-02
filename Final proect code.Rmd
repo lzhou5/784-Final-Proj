@@ -5,16 +5,24 @@ date: "11/16/2017"
 output: html_document
 ---
 # Introduction 
+Laura 
+  For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
+  
+##Background on Breast Cancer
+Peiyao
 
-Background 
+##CoiNcide Paper Reivew
+  Laura 
+  The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
 
-CoiNcide Paper Reivew
-
-Project Objectives
-
-Figure 6 Discussion
-
+##Project Objectives
+Peiyao
+  The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, 
+##Figure 6 Discussion
+Shaina
+  *include why we use mclust
 # Data Managment 
+Shaina
 ```{r message=FALSE}
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("curatedBreastData")
@@ -77,7 +85,7 @@ datnCuts
 dat <- cbd[datnCuts$real.cut == 1]
 ```
 
-Below is a summary of the final analysis dataset 
+Below is a summary of the datasets used in our analysis. As seen in Table 1 of the paper, we have obtained the same datasets. 
 ```{r}
 #Table 1: Summary of our dataset 
 table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
@@ -85,25 +93,12 @@ names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
 table1
 ```
 
-# Data Analysis 
-
-Below is project analysis using final filtered data 
+Before we can run our project analysis on the dataset, there was one more filter that had to be applied. The format of the final datasets should only be the last 35 genes
 ```{r}
-#===================================# Figure 6 #=====================================#
-# subtyping
-
-
 #== instructions for removing duplicate genes_symbols
 # For duplicated gene symbols linked to different probes in an array, the probe linked to that
 # specific gene with the highest variance across all samples was kept.
 # Additional Files 2
-
-# jnk.gs <- featureData(jnk)$gene_symbol
-# jnk.vars <- apply(exprs(jnk), 1, var)
-# 
-# thing <- data.frame(jnk.gs, jnk.vars)
-# thing2 <- thing[thing$jnk.gs %in% gs,]
-
 
 #=== FUNCTION: data.ready
 # OBJECTIVE: for one dataset, this returns the 35 pam50 genes with the largest variance
@@ -144,7 +139,10 @@ data.ready <- function(dat){
   # rownames(final) <- gs
   return(final)
 }
+```
 
+Thus, our final 17 datasets are created below using the functions defined above. 
+```{r}
 # the unconcatenated final analysis data set
 data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   n.d <- featureData(d)$gene_symbol
@@ -152,7 +150,7 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   study.name <- phenoData(d)$datasetName
                                                   colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
-                                                  return(d2)})
+                                                  return(d2)})
 ## NOTE:!!! This is something I corrected for in the clustering2 function​
 # there are na values in the 12th and 13th study
 # find where the na values are and remove those
@@ -170,82 +168,28 @@ id.na.13 = which(is.na(data.uncat[[13]]))
 # rowid.na.13 = (id.na.13 - 1)%%35 + 1
 colid.na.13 = ceiling(id.na.13/35)
 data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
-
-
-# the naive concatenation of the final analysis data set
-# data.ncat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.uncat)
-data.ncat <- do.call(cbind, data.uncat)
-# 
-
-par(mfrow=c(4, 4), mar=c(5,3,3,1))
-for(i in 1:16)
- hist(unlist(data.uncat[[i]]), main=paste("Study", all.t[[i]]), xlab="counts")
-  hist(unlist(data.uncat[[17]]), main=paste("Study", all.t[[17]]), xlab="counts")
-par(mfrow=c(1,1))
-
 ```
 
-We create the function for the following analysis on the concatonated datasets
+# Data Analysis 
+Laura
+  To observe our final 17 datasets, we create histograms for each study of the counts, summarized in Figure 1 below. 
+```{r}
+#Figure 1
+par(mfrow=c(4, 4), mar=c(5,3,3,1))
+for(i in 1:17)
+ hist(unlist(data.uncat[[i]]), main=paste("Study", all.t[[i]]), xlab="counts")
+par(mfrow=c(1,1))
+```
+  
+  From Figure 1 above, we note that Study 18728 seemed to have already been transformed. The paper did not discuss how this study was transformed. Thus, we did not transform this dataset and assumed it was a normtransform. 
+  
+  To run the analysis in each of the tasks described above, we will use the `clustering` functions below. 
 ```{r}
 library(matrixStats)
 library(dendextend)
 library(RColorBrewer)
 library(DESeq2)
 library(mclust)
-
-
-par(mfrow=c(3,1), mar=c(7,3,3,1))
-
-################Using hclust method=complete as seen in class 
-#replace 11 with length(dat) when fix dataset 12 and 13 
-for(i in 1:17){
-par(mfrow=c(2,2), mar=c(7,3,3,1))
-#obtain dataset for study 1
-dat1=as.matrix(data.uncat[[i]])
-
-### do normtransform of counts
-if (i != 12){ # the 12th one is already normalized
-  dat11=log2(dat1+1)
-  dat11=t(dat11)
-}else{
-  dat11 = dat1
-  dat11 = t(dat11)
-}
-}
-
-
-#Function runnign mclust and hclust
-clustering <- function(data){
-par(mfrow=c(2,2))
-dat11=t(as.matrix(data))
-
-dists <- dist(dat11)
-hc <- hclust(dists, method="complete")
-dend <- as.dendrogram(hc)
-o.dend <- order.dendrogram(dend)
-
-#using mclust 
-BIC = mclustBIC((dat11))
-mod1 = Mclust(dat11, x = BIC)
-
-####plotting the dendrogram
-#color by mclust catebory
-labels_colors(dend) <- as.integer(mod1$classification[o.dend])
-
-plot(dend, main=paste("clusters for Study", all.t[i], "by mclust classification")) #all.t contains study labels
-
-#legend("bottom",c("Group1","Batch 6","Batch 7"),fill=c(1,2,3),pch=1,cex=0.5)
-
-####plotting mclust 
-plot(BIC)
-plot(mod1, what = "classification", dimens=c(2,1), main= paste("Mclust Classification for Study", all.t[i]))
-
-####bargraph of muclust 
-str(mod1)
-a=table(mod1$classification)
-barplot(a, main=paste("Number of Samples in Classifications in Study", all.t[i]))
-}
-
 
 # FUNCTION: clustering2
 # OBJECTIVE: to create 4 plots detailing results of hclust (colored by mclust results), 
@@ -289,7 +233,10 @@ clustering2 <- function(data, data.type){
   return(mod1)
 }
 
-##with log2 transform
+#FUNCTION: clustering3
+# OBJECTIVE: same as function `clustering2` except with a normtransform
+# INPUTS: dataset and data.type (what type of transformation was used)
+# OUTPUS: 2x2 plot of 4 elements and mclust object with log2 transform
 clustering3 <- function(data, data.type){
   par(mfrow=c(2,2))
   where.nas <- is.na(colMeans(data))
@@ -322,33 +269,34 @@ clustering3 <- function(data, data.type){
   
   ####bargraph of muclust 
   a=table(mod1$classification)
-  barplot(a, main="Number of Samples\nin Each mclust Class", ylim=c(0,nrow(dat11)), col=cols)
+  barplot(a, main=paste("Number of Samples\n in Each mclust Class",all.t[i]), ylim=c(0,nrow(dat11)), col=cols)
   return(mod1)
 }
 ```
 
-# Task 1 
+## Task 1: Clustering within each Study 
+  In our first task, we are interested in establishing the latent subtypes within each of the studies. 
 ```{r}
 #===================================# Task 1 #=====================================#
-#fnding clusters of each study (17)
-par(mfrow=c(3,1), mar=c(7,3,3,1))
-
+#fnding clusters of each study
 for(i in 1:11){
   dat1=as.matrix(data.uncat[[i]])
   clustering3(dat1, "NormTransform")
 }
 
-clustering2(data.uncat[[12]], "log Transform ")
-clustering3(data.uncat[[1]], "log Transform")
+#pre-transformed study 18728
+clustering2(data.uncat[[12]], "'Norm'Transform ")
 
-for(i in 14:17){
+for(i in 13:17){
   dat1=as.matrix(data.uncat[[i]])
-### do normtransform of counts
-trandat=log2(dat1+1)
-  clustering(trandat)
+  clustering3(trandat)
 }
+```
 
+We summarize the total number of clusters and the number of samples in each cluster by study in the following figure. 
+```{r}
 ### outputting bar plot for all 17 studies
+#first 11 studies 
 par(mfrow=c(3,4), mar=c(5,3,3,1))
 for(i in 1:11){
   data=data.uncat[[i]]
@@ -367,8 +315,8 @@ for(i in 1:11){
   barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
   }
 
-for(i in 12:13){
-  data=data.uncat[[i]]
+#pre-transformed study 18728
+  data=data.uncat[[12]]
   where.nas <- is.na(colMeans(data))
   data0 <- data[,where.nas == FALSE]
   dat11 <- t(as.matrix(data0))
@@ -381,9 +329,9 @@ for(i in 12:13){
   ####bargraph of muclust 
   a=table(mod1$classification)
   barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
-}
 
-for(i in 14:17){
+#remaining studies
+for(i in 13:17){
   data=data.uncat[[i]]
   where.nas <- is.na(colMeans(data))
   data0 <- data[,where.nas == FALSE]
@@ -399,33 +347,31 @@ for(i in 14:17){
   a=table(mod1$classification)
   barplot(a, main=paste("Study", all.t[[i]]), ylim=c(0,nrow(dat11)), col=cols)
   }
-
 ```
 
-#Task 2 
-
+  As seen above, the number of clusters in each study ranges from 2 to 9 clusters. The most common number of clusters (determined by BIC) is 4. 
+  
+##Task 2: Clustering within Normtransformed Concatonated dataset
+  In Task 2, we are interested in the number of clusters in the concatonated data of all the studies. Each study is first normtransformed before we concatonate and cluster. 
 ```{r}
 #===================================# Task 2 #=====================================#
-# norm transform each study, concatenate, run hclust/mclust
 #normalize each study
 data.norm <- vector("list", 17)
 data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 data.norm[[12]] <- data.uncat[[12]]
-data.norm[[13]]<- data.uncat[[13]]
-data.norm[14:17]<- lapply(14:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
 #concatonate the normtransformed datasets
-# data.normcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.norm)
 data.normcat <- do.call(cbind, data.norm)
 
-###apply function to norm transformed data
+#apply function to norm transformed data
 clustering2(data.normcat, "Norm Transform")
 ```
 
-#Task 3 
+##Task 3: Clustering within Quantile Normalized Concatonated Dataset
 ```{r}
 #===================================# Task 3 #=====================================#
 
@@ -452,7 +398,7 @@ data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 c <- clustering2(data.qnormcat, "Quantile Normalized")
 ```
 
-# Task 4 
+## Task 4: Clustering within Batch Mean Censored Concatonated Dataset
 ```{r}
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
@@ -490,10 +436,12 @@ clustering2(data.normComBat, "normComBat")
 # clustering2(data.qnormComBat, "qnormComBat")
 ```
 
-#Task 5 
+##Task 5: Clustering within ComBat Transformed Dataset
 ```{r}
 #ComBat transform 
 ``` 
 
 # Summary of Results 
 Comparison to Figure 6 of paper 
+
+#References
