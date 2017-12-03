@@ -8,14 +8,24 @@ output: html_document
   For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
   
 ##Background on Breast Cancer
-Peiyao
+Breast cancer is a heterogeneous disease composed of a growing number of recognized biological subtypes. One way to detect cancer subtypes is through the analysis of gene expression. Detecting cancer subtypes can be beneficial to both the medical and statistical industry. Gene expression studies using DNA microarrays have identified several distinct breast cancer subtypes; these subtypes differ markedly in prognosis and in the repertoire of therapeutic targets they express. Gene expression patterns can stratify patients into subtypes with distinct survival patterns; such subtypes have the potential to drive personalized patient treatment regimens and risk prediction models. 
+
+
 
 ##CoiNcide Paper Reivew
   The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
 
 ##Project Objectives
-Peiyao
-  The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, 
+<!--   The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, we want to explore the effect of transformations on the subtype clusters by comparing clustering results of hclust and mclustBIC -->
+
+<!-- \begin{enumerate} -->
+<!-- \item within each study -->
+<!-- \item on concatenated norm transformed data -->
+<!-- \item after Quantile Normalization on concatenated data -->
+<!-- \item after Batch Mean Centering -->
+<!-- \item after ComBat transforming -->
+<!-- \end{enumerate} -->
+
   
 ##Figure 6 Discussion
 Shaina
@@ -316,7 +326,7 @@ clustering2(data.normcat, "Norm Transform")
 
   From the Figure above, we can see that the heuristic clustering and the mclustering are similar, in that there are approximately distinct 9 groups (with some discrepancy with the blue and orange clusters). From the BIC criteria, the best number of clusters is 9. As we can see in the lower left of the figure, there are two distinct clusters (pink and grey), whereas the remaining cluster centroids are overlapping. One of these clusters is most likely from Study 18728, since it was not transformed in with the norm transform (log2(count+1)). Compared to the CoiNcIDE result in Figure 6A and B, we can see that this simple norm transformed data does not agree with the results from the paper. Using `mclust` and `hclust`, we get a lot more clusters (compared to the paper's results of 3 and 4 clusters, respecitively). 
   
-##Task 3: Clustering within Quantile Normalized Concatonated Dataset
+##Task 3: Clustering within Quantile Normalized Concatenated Dataset
   The quantile normalization is the most heavy handed type of normalization. 
 ```{r, message=FALSE}
 #===================================# Task 3 #=====================================#
@@ -342,7 +352,11 @@ data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 c <- clustering2(data.qnormcat, "Quantile Normalized")
 ```
 
-## Task 4: Clustering within Batch Mean Censored Concatonated Dataset
+## Task 4: Clustering within Batch Mean Centered Concatonated Dataset
+<!-- In this task we are interested in transform the data by the method called `Batch Mean Centering`. Batch mean centering transforms the observation $x_{ij}^k$ from gene $i$, sample $j$ and study $k$ by the formula: -->
+<!-- \[\hat{x}_{ij}^k = x_{ij}^k - \bar{x}_i^k\] -->
+<!-- Each study is first transformed by doing a $\log2$ normalization and then we take the mean $\bar{x}_i^k$ within each gene and each study. After that we use the original observation to subtract the mean to finish the transformation. -->
+
 ```{r, message=FALSE}
 #===================================# Task 4 #=====================================#
 # Batch Mean Censoring each study, concatenate, run hclust
@@ -355,6 +369,7 @@ data.norm[[12]] <- data.uncat[[12]]
 data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
                                               ctsn=log2(datn1+1)
                                                   return(ctsn)})
+
 # concatenate the 17 log2 normalized datasets
 data.normcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.norm)
 
