@@ -5,14 +5,12 @@ date: "11/16/2017"
 output: html_document
 ---
 # Introduction 
-Laura 
   For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
   
 ##Background on Breast Cancer
 Peiyao
 
 ##CoiNcide Paper Reivew
-  Laura 
   The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
 
 ##Project Objectives
