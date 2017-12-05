@@ -1,0 +1,410 @@
+---
+title: "Final project code"
+author: "Names"
+date: "11/16/2017"
+output: html_document
+---
+# Introduction 
+  For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
+  
+##Background on Breast Cancer
+Breast cancer is a heterogeneous disease composed of a growing number of recognized biological subtypes. One way to detect cancer subtypes is through the analysis of gene expression. Detecting cancer subtypes can be beneficial to both the medical and statistical industry. Gene expression studies using DNA microarrays have identified several distinct breast cancer subtypes; these subtypes differ markedly in prognosis and in the repertoire of therapeutic targets they express. Gene expression patterns can stratify patients into subtypes with distinct survival patterns; such subtypes have the potential to drive personalized patient treatment regimens and risk prediction models. 
+
+
+
+##CoiNcide Paper Reivew
+  The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
+
+##Project Objectives
+Peiyao
+  The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, we want to explore the effect of transformations on the subtype clusters by comparing clustering results of hclust and mclustBIC.
+
+\begin{enumerate}
+\item within each study
+\item on concatenated norm transformed data
+\item after Quantile Normalization on concatenated data
+\item after Batch Mean Centering 
+\item after ComBat transforming
+\end{enumerate}
+
+  
+##Figure 6 Discussion
+Shaina
+  *include why we use mclust
+  
+# Data Managment 
+Shaina
+```{r message=FALSE}
+#source("https://bioconductor.org/biocLite.R")
+#biocLite("curatedBreastData")
+
+library("curatedBreastData")
+library(SummarizedExperiment)
+library(Biobase)
+
+data(curatedBreastDataExprSetList)
+cbd <- curatedBreastDataExprSetList
+#str(cbd[[1]])
+str <- unique(protocolData(cbd[[1]])$labelDescription)
+
+grepl("breast", str, ignore.case=T)
+```
+
+To obtain the same dataset as the paper, we had to apply two filters: (1) datsets with at least 30 samples and (2) has at least the 35 genes in PAM50. 
+```{r, message=FALSE}
+#===================================# Getting the same dataset #=====================================#
+#===# apply filters
+samp.size <- sapply(1:length(cbd), function(i) nrow(protocolData(cbd[[i]])))
+cut1 <- samp.size > 30 # checking which/how many have at least 30 samples
+
+ #== making the first cut
+names.cut1 <- names(cbd)[cut1]
+cbd.cut1 <- cbd[names.cut1]
+
+all.t <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][2])
+datnCuts <- cbind(all.t, cut1) # all genes and which made first cut
+geo.plat.id <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][3])
+
+batch.id0 <- sapply(1:34, function(i) strsplit(as.character(unique(phenoData(cbd[[i]])$datasetName)), "_")[[1]][4])
+batch.id <- ifelse(batch.id0 == "all", "", batch.id0)
+#featureData(cbd[[1]])$probe
+
+#namesofthing <- sapply(1:34, function(i) as.character(unique(phenoData(cbd[[i]])$datasetName)))
+
+
+dat1 <- subset(cbd, subset=c(cut1 == 1))
+
+#== making the second cut 
+# pam50 gene set
+gs0 <- c("GRB7 CEP55 MYBL2 KRT5 CDC20 UBE2C CDH3 EXO1 MELK MIA KRT14 BAG1 BIRC5 BLVRA CCNB1 CCNE1 CDC6 CENPF EGFR ERBB2 ESR1 FOXA1 FOXC1 KIF2C KRT17 MAPT MDM2 MKI67 MMP11 MYC PGR RRM2 SFRP1 SLC39A6 TYMS")
+gs <- unlist(strsplit(gs0, " "))
+length(gs)
+
+cut2 <- sapply(1:length(cbd), function(i) all(gs %in% featureData(cbd[[i]])$gene_symbol))
+  
+# summary of which experiments made which cuts
+datnCuts <- data.frame(all.t, cut1, cut2)
+datnCuts[["both.cuts"]] <- with(datnCuts, cut1*cut2)
+datnCuts[["sampsize"]] <- samp.size
+datnCuts[["real.cut"]] <- with(datnCuts, cut2*(sampsize > 47))
+datnCuts[["batch.id"]] <- batch.id
+datnCuts[["geo.plat.id"]] <- geo.plat.id
+
+datnCuts
+
+# dataset with only those experiments that made both cuts
+dat <- cbd[datnCuts$real.cut == 1]
+```
+
+Below is a summary of the datasets used in our analysis. As seen in Table 1 of the paper, we have obtained the same datasets. 
+```{r, message=FALSE}
+#Table 1: Summary of our dataset 
+table1 <- datnCuts[datnCuts$real.cut==1, c("all.t","batch.id","geo.plat.id","sampsize")]
+names(table1) <- c("ID","Batch ID","GEO Platform ID","Samples (n)")
+table1
+```
+
+Before we can run our project analysis on the dataset, there was one more filter that had to be applied. The format of the final datasets should only be the last 35 genes
+```{r, message=FALSE}
+#== instructions for removing duplicate genes_symbols
+# For duplicated gene symbols linked to different probes in an array, the probe linked to that
+# specific gene with the highest variance across all samples was kept.
+# Additional Files 2
+
+#=== FUNCTION: data.ready
+# OBJECTIVE: for one dataset, this returns the 35 pam50 genes with the largest variance
+# INPUTS:  one dataset from dat
+# OUTPUT: dataset without replicates
+data.ready <- function(dat){
+  jnk <- dat
+  jnk2 <- featureData(jnk)$gene_symbol %in% gs
+
+  jnk.gs <- featureData(jnk)$gene_symbol
+  jnk.vars <- apply(exprs(jnk), 1, function(x) var(x, na.rm=TRUE))
+  
+  thing <- data.frame(jnk.gs, jnk.vars)
+  thing2 <- thing[thing$jnk.gs %in% gs,]
+
+  #=== FUNCTION: compare.to.max
+  # OBJECTIVE: compare the value in a row of a matrix to the max value in the cluster
+  # INPUTS: the dataset (data), the row index (i), the cluster variable (clust)
+  # OUTPUTS: indicator variable of whether the given row matches the cluster max
+  compare.to.max <- function(i, data=thing2, clust="jnk.gs"){
+    d <- data[[clust]]
+    c <- d[i]
+    max.c <- max(data[d == c,"jnk.vars"])
+    is.max <- as.numeric(data[i,"jnk.vars"] == max.c)
+    
+    return(is.max)
+  }
+  
+  is.max <- sapply(1:nrow(thing2), compare.to.max)
+  
+  thing3 <- data.frame(thing2, is.max)
+  
+  final0 <- jnk[jnk2==TRUE,]
+  final <- final0[thing3$is.max==1,]
+  
+  # o <- match(gs, thing3$jnk.gs[thing3$is.max==1])
+  # final <- final[o,]
+  # rownames(final) <- gs
+  return(final)
+}
+```
+
+Thus, our final 17 datasets are created below using the functions defined above. 
+```{r, message=FALSE}
+# the unconcatenated final analysis data set
+data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
+                                                  n.d <- featureData(d)$gene_symbol
+                                                  d2 <- exprs(d)
+                                                  study.name <- phenoData(d)$datasetName
+                                                  colnames(d2) <- paste(i, "_", colnames(d2), sep="")
+                                                  rownames(d2) <- n.d
+                                                  return(d2)})
+## NOTE:!!! This is something I corrected for in the clustering2 function​
+# there are na values in the 12th and 13th study
+# find where the na values are and remove those
+# 12
+id.na.12 = which(is.na(data.uncat[[12]]))
+# rowid.na.12 = (id.na.12 - 1)%%35 + 1
+# col id of the na values
+colid.na.12 = ceiling(id.na.12/35)
+
+# remove the columns with na values
+data.uncat[[12]] = data.uncat[[12]][, -unique(colid.na.12)]
+
+# 13
+id.na.13 = which(is.na(data.uncat[[13]]))
+# rowid.na.13 = (id.na.13 - 1)%%35 + 1
+colid.na.13 = ceiling(id.na.13/35)
+data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
+```
+
+# Data Analysis 
+Laura
+  To observe our final 17 datasets, we create histograms for each study of the counts, summarized in Figure 1 below. 
+```{r, message=FALSE}
+#Figure 1
+par(mfrow=c(3,6), mar=c(5,3,3,1))
+for(i in 1:17)
+ hist(unlist(data.uncat[[i]]), main=paste("Study", all.t[[i]]), xlab="counts")
+par(mfrow=c(1,1))
+```
+  
+  From Figure 1 above, we note that Study 18728 (the 12th study) seemed to have already been transformed. The paper did not discuss how this study was transformed. Thus, we did not transform this dataset and assumed it was a normtransform. 
+  
+  To run the analysis in each of the tasks described above, we will use the `clustering` functions below. 
+```{r, message=FALSE}
+library(matrixStats)
+library(dendextend)
+library(RColorBrewer)
+library(DESeq2)
+library(mclust)
+
+# FUNCTION: clustering2
+# OBJECTIVE: to create 4 plots detailing results of hclust (colored by mclust results), 
+#            # clusters for mclust determined by BIC,
+#            mclust classification and centroids in 2-D,
+#            and number of samples in each mclust cluster
+# INPUTS: dataset and data.type (what type of transformation was used)
+# OUTPUS: 2x2 plot of 4 elements and mclust object
+clustering2 <- function(data, data.type){
+  par(mfrow=c(2,2))
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  dists <- dist(dat11)
+  
+  hc <- hclust(dists, method="complete")
+  dend <- as.dendrogram(hc)
+  o.dend <- order.dendrogram(dend)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+  
+  
+  ####plotting the dendrogram
+  #color by mclust catebory
+  labels_colors(dend) <- cols[mod1$classification[o.dend]]
+  plot(dend, main=paste("Heuristic Clustering of\n", data.type, "Data\nby mclust classification")) #all.t contains study labels
+  
+
+  ####plotting mclust 
+  plot(mod.BIC)
+  title("Number of Components\nSelected by BIC")
+  plot(mod1, what = "classification", dimens=c(2,1), main="", col=cols)
+  title("Mclust Classification and Centroids")
+  
+  ####bargraph of muclust 
+  a=table(mod1$classification)
+  barplot(a, main="Number of Samples\nin Each mclust Class", ylim=c(0,nrow(dat11)), col=cols)
+  return(mod1)
+}
+```
+
+## Task 1: Clustering within each Study 
+  In our first task, we are interested in establishing the latent subtypes within each of the studies using `mclustBIC`. Since the `mclust` function takes time to run, we ran the following code below which outputs all the `mclustBIC` into object `clustList`. Below is the code we ran outside of this Rmarkdown. 
+```{r, eval=FALSE}
+#function that outputs the mclust output
+clusteringFunc <- function(data){
+  where.nas <- is.na(colMeans(data))
+  data0 <- data[,where.nas == FALSE]
+  dat11 <- t(as.matrix(data0))
+  #dists <- dist(dat11)
+  
+  #hc <- hclust(dists, method="complete")
+  #dend <- as.dendrogram(hc)
+  #o.dend <- order.dendrogram(dend)
+  
+  #using mclust 
+  mod.BIC = mclustBIC((dat11))
+  mod1 = Mclust(dat11, x = mod.BIC)
+  
+ return(mod1)
+}
+
+#creating a list of the mclust output
+clustList=list()
+for(i in 1:11){
+  datt=as.matrix(data.uncat[[i]])
+  dat1=log2(datt+1)
+  clustList[[i]]=clusteringFunc(dat1)
+}
+
+dat12=as.matrix(data.uncat[[12]])
+clustList[[12]]=clusteringFunc(dat12)
+
+for(i in 13:17){
+  datt=as.matrix(data.uncat[[i]])
+  dat1=log2(datt+1)
+  clustList[[i]]=clusteringFunc(dat1)
+}
+
+#saved object to reference in Rmarkdown
+save(clustList,file="clustList")
+```
+  
+  We then use the object `clustList` to summarize the total number of clusters within each study and the number of samples within each cluster. As seen below, the number of clusters in each study ranges from 2 to 9 clusters. The most common number of clusters (determined by BIC) is 4. 
+  
+```{r, message=FALSE}
+#===================================# Task 1 #=====================================#
+load("clustList")
+
+#Summary of all number of samples in each mclust class by study
+par(mfrow=c(3,6), mar=c(5,3,3,1))
+for(i in 1:17){
+mod1=clustList[[i]]
+cols <- brewer.pal(length(unique(mod1$classification)), "Set1")
+a=table(mod1$classification)
+barplot(a, main=paste("Number of clusters \n in Study",all.t[i]), ylim=c(0,nrow(t(data.uncat[[i]]))), col=cols)
+}
+par(mfrow=c(1,1))
+```
+
+  
+##Task 2: Clustering within Normtransformed Concatonated dataset
+  In Task 2, we are interested in the number of clusters in the concatonated data of all the studies. Each study is first normtransformed before we concatonate and then figure out the latent clusters. 
+```{r, message=FALSE}
+#===================================# Task 2 #=====================================#
+#normalize each study
+data.norm <- vector("list", 17)
+data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+data.norm[[12]] <- data.uncat[[12]]
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+#concatonate the normtransformed datasets
+data.normcat <- do.call(cbind, data.norm)
+
+#apply function to norm transformed data
+clustering2(data.normcat, "Norm Transform")
+```
+
+  From the Figure above, we can see that the heuristic clustering and the mclustering are similar, in that there are approximately distinct 9 groups (with some discrepancy with the blue and orange clusters). From the BIC criteria, the best number of clusters is 9. As we can see in the lower left of the figure, there are two distinct clusters (pink and grey), whereas the remaining cluster centroids are overlapping. One of these clusters is most likely from Study 18728, since it was not transformed in with the norm transform (log2(count+1)). Compared to the CoiNcIDE result in Figure 6A and B, we can see that this simple norm transformed data does not agree with the results from the paper. Using `mclust` and `hclust`, we get a lot more clusters (compared to the paper's results of 3 and 4 clusters, respecitively). 
+  
+##Task 3: Clustering within Quantile Normalized Concatonated Dataset
+  The quantile normalization is the most heavy handed type of normalization. 
+```{r, message=FALSE}
+#===================================# Task 3 #=====================================#
+# Quantile Normalization each study, concatenate, run hclust /mclust
+#source("https://bioconductor.org/biocLite.R")
+
+#concatenate, run quantile normalization, take log (then transpose as needed), then run hclust /mclust
+#normalize.quantiles(x,copy=TRUE) package: PreprocessCore
+library(preprocessCore)
+
+# performing quantile normalization on each study
+data.quant <- lapply(1:length(data.uncat), function(i) normalize.quantiles(data.uncat[[i]], copy=TRUE))
+
+par(mfrow=c(4, 4))
+for(i in 1:16)
+ hist(unlist(data.quant[[i]]), main=paste("Study", i), xlab="counts")
+par(mfrow=c(1,1))
+
+# merging them into one concatenated dataset
+data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
+
+# clustering with hclust and mclust
+c <- clustering2(data.qnormcat, "Quantile Normalized")
+```
+
+## Task 4: Clustering within Batch Mean Centered Concatonated Dataset
+In this task we are interested in transforming the data by the method called `Batch Mean Centering`. Batch mean centering transforms the observation $x_{ij}^k$ from gene $i$, sample $j$ and study $k$ by the formula:
+\[\hat{x}_{ij}^k = x_{ij}^k - \bar{x}_i^k\]
+Each study is first transformed by doing a $\log2$ normalization and then we take the mean $\bar{x}_i^k$ within each gene and each study. After that we use the original observation to subtract the computed mean to finish the transformation.
+
+```{r, message=FALSE}
+#===================================# Task 4 #=====================================#
+# Batch Mean Censoring each study, concatenate, run hclust
+# log2 transform the data except for the 12th study since it's already normalized
+data.norm <- vector("list", 17)
+data.norm[1:11] <- lapply(1:11, function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+data.norm[[12]] <- data.uncat[[12]]
+data.norm[13:17]<- lapply(13:length(dat), function(i) {datn1 <-as.data.frame(data.uncat[[i]])
+                                              ctsn=log2(datn1+1)
+                                                  return(ctsn)})
+# concatenate the 17 log2 normalized datasets
+data.normcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.norm)
+
+# calculate the batch mean with respect to the 35 genes
+data.rowmean = lapply(data.norm, function(data) apply(data, 1, mean))
+# subtract the mean
+data.bmcuncat = lapply(1:length(data.norm), function(ix) data.norm[[ix]] - data.rowmean[[ix]])
+# concatenate the 17 bmc normalized dataset
+data.bmccat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.bmcuncat)
+clustering2(data.bmccat, "BMC")
+
+
+```
+
+##Task 5: Clustering within ComBat Transformed Dataset
+In this task we are interested in transforming the data by the method called `ComBat`. The transformation is fulfilled by the R package `sva`. The general idea behind ComBat transformation is that it estimates the parameters of a model for mean and variance for each gene and then adjusts the genes in each batch to meet the assumed model:
+\[x_{ij}^k = \alpha_i + C \beta_i + \gamma_i^k + \delta_i^k \epsilon_{ij}^k.\]
+The theory that backs up this model is Empirical Bayes. As in the last task, we first transform the data by the $\log2$ transformation. We generate the study id in a vector as one input in the function `ComBat` as we show below:
+```{r, message=FALSE}
+#ComBat transform 
+# ComBat: concatenate the norm transformed data (data.normcat) and the quantile normalized data (data.qnormcat) and then run ComBat on the data set to adjust for batch effects, treat each study as a known batch.
+library(sva)
+batch.id.list = lapply(1:length(data.uncat), function(batch.id) rep(batch.id, ncol(data.uncat[[batch.id]])))
+batch.id.unlist = as.factor(unlist(batch.id.list))
+
+data.normComBat <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior.plots = FALSE,
+  mean.only = FALSE, ref.batch = NULL, BPPARAM = bpparam("SerialParam"))
+clustering2(data.normComBat, "normComBat")
+
+``` 
+
+# Summary of Results 
+  Compared to Figure 6, the quantile norm transformation of the concatonated data produced results most in agreement with Figure 6. The quantile normalization resulted in four latent subtypes and the number of samples in each subtype is similar to the results from the CoiNcIDE method (Figure 6A). Additionally, the quantile normalized data removed potential batch effects that was seen in a naive norm transformation of the data. The norm transformed data did not match the results of the paper at all, producing 9 latent subtypes. 
+  Additionally, we performed a batch means censoring and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means censoring did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. However, the number of identified subtypes from the ComBat transformed data was similar to the paper (four subtypes versus three subtypes), as well as the number in each subtype, adjusting for the fact of an additional cluster. 
+  Thus, we were able to identify that CoiNcIDE method is most similar to using `mclust` on quantile normalized data and that the batch means and ComBat transformation produce similar results. However, it is not clear from our project analysis that CoiNcIDE is a better method than concatonating the data and running `mclust`. 
+
+#References
+1. Planey CR and Gevaert O. "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets". Genome Medicine. 2016; 8:27
