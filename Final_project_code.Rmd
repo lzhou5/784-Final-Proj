@@ -1,13 +1,13 @@
 ---
 title: "Final project code"
-author: "Names"
+author: "Laura Zhou, Shaina Mitchell, Peiyao"
 date: "11/16/2017"
 output: html_document
 ---
 # Introduction 
   For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
   
-##Background on Breast Cancer
+## Background on Breast Cancer
 Breast cancer is a heterogeneous disease composed of a growing number of recognized biological subtypes. One way to detect cancer subtypes is through the analysis of gene expression. Detecting cancer subtypes can be beneficial to both the medical and statistical industry. Gene expression studies using DNA microarrays have identified several distinct breast cancer subtypes; these subtypes differ markedly in prognosis and in the repertoire of therapeutic targets they express. Gene expression patterns can stratify patients into subtypes with distinct survival patterns; such subtypes have the potential to drive personalized patient treatment regimens and risk prediction models. 
 
 
@@ -410,5 +410,5 @@ From the Figure above, we can see that the heuristic clustering and the mcluster
   Additionally, we performed a batch means centering and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means censoring did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. The number of identified subtypes from the ComBat transformed data was eight, which also did not match with the paper's result. However the population distribution of the 4 largest clusters are similar to the ground truth, and we suspect that our clustering algorithm over-classified some cancer subtypes into further smaller groups. 
   Thus, we were able to identify that CoiNcIDE method is most similar to using `mclust` on quantile normalized data and that the batch means and ComBat transformation produce similar results. However, it is not clear from our project analysis that CoiNcIDE is a better method than concatonating the data and running `mclust`. 
 
-#References
+# References
 1. Planey CR and Gevaert O. "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets". Genome Medicine. 2016; 8:27
