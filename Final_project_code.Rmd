@@ -12,11 +12,10 @@ Breast cancer is a heterogeneous disease composed of a growing number of recogni
 
 
 
-##CoiNcide Paper Reivew
+## CoiNcide Paper Reivew
   The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
 
-##Project Objectives
-Peiyao
+## Project Objectives
   The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, we want to explore the effect of transformations on the subtype clusters by comparing clustering results of hclust and mclustBIC.
 
 \begin{enumerate}
@@ -28,12 +27,21 @@ Peiyao
 \end{enumerate}
 
   
-##Figure 6 Discussion
-Shaina
-  *include why we use mclust
-  
-# Data Managment 
-Shaina
+## Figure 6 Discussion
+We decided to recreate Figure 6 from the paper for our project. This figure demonstrates the clustering that resulted from using various clustering techniques: the proprietary CoINcIDE technique, naive clustering with no transformation, Batch Mean Centering, and ComBat. The idea in the paper was to try to recover the established PAM50 subtypes. In the event of differences, the results would be used to suggest that unsupervised machine learning methods had predicted a more sentitive subtyping than the commonly accepted ones. While in class we learned about 'hclust' which heuristically groups units based on closeness characteristics, for this project we opted to use 'mclust' which is a model-based clustering algorithm so that we could use a criterion like BIC to select the number of classes, which is not possible with the results of 'hclust'. However, we recognize that the model may be incorrectly specified, and so for each clustering method we used in this project, we also included a figure comparing 'mclust' and 'hclust results.
+
+# Data Management 
+
+Data management of the CuratedBreastData involved applying three filters to achieve the same analysis dataset as was used in the study. The three criteria were:
+
+- only include datasets with at least 30 samples were to be included
+
+- only include datasets that included the minimum 35 genes of the PAM50 genes 
+
+- within a dataset, in the event that information on a gene was collected more than once, only include the version with the highest variance
+
+These filtering steps resulted in the attrition from 34 original datasets to 17 datasets to be used for the subsequent analysis.
+
 ```{r message=FALSE}
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("curatedBreastData")
@@ -182,7 +190,7 @@ data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
 ```
 
 # Data Analysis 
-Laura
+
   To observe our final 17 datasets, we create histograms for each study of the counts, summarized in Figure 1 below. 
 ```{r, message=FALSE}
 #Figure 1
@@ -305,7 +313,7 @@ par(mfrow=c(1,1))
 ```
 
   
-##Task 2: Clustering within Normtransformed Concatonated dataset
+## Task 2: Clustering within Normtransformed Concatonated dataset
   In Task 2, we are interested in the number of clusters in the concatonated data of all the studies. Each study is first normtransformed before we concatonate and then figure out the latent clusters. 
 ```{r, message=FALSE}
 #===================================# Task 2 #=====================================#
@@ -327,7 +335,7 @@ clustering2(data.normcat, "Norm Transform")
 
   From the Figure above, we can see that the heuristic clustering and the mclustering are similar, in that there are approximately distinct 9 groups (with some discrepancy with the blue and orange clusters). From the BIC criteria, the best number of clusters is 9. As we can see in the lower left of the figure, there are two distinct clusters (pink and grey), whereas the remaining cluster centroids are overlapping. One of these clusters is most likely from Study 18728, since it was not transformed in with the norm transform (log2(count+1)). Compared to the CoiNcIDE result in Figure 6A and B, we can see that this simple norm transformed data does not agree with the results from the paper. Using `mclust` and `hclust`, we get a lot more clusters (compared to the paper's results of 3 and 4 clusters, respecitively). 
   
-##Task 3: Clustering within Quantile Normalized Concatenated Dataset
+## Task 3: Clustering within Quantile Normalized Concatenated Dataset
   The quantile normalization is the most heavy handed type of normalization. 
 ```{r, message=FALSE}
 #===================================# Task 3 #=====================================#
