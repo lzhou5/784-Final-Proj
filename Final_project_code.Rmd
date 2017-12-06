@@ -372,6 +372,7 @@ Next, we subtract the row mean vector from the original matrix of each study row
 data.bmcuncat = lapply(1:length(data.norm), function(ix) data.norm[[ix]] - data.rowmean[[ix]])
 # concatenate the 17 bmc normalized dataset
 data.bmccat <- do.call(cbind, data.bmcuncat)
+set.seed(706)
 clustering2(data.bmccat, "BMC")
 ```
 
@@ -395,11 +396,11 @@ data.normComBat <- ComBat(data.normcat, batch.id.unlist, par.prior = TRUE, prior
 clustering2(data.normComBat, "normComBat")
 ``` 
 
-From the Figure above, we can see that the heuristic clustering and the mclustering give similar results. An interesting fact to notice is that the lower left graph of this figure compared to the last one, does not have an obvious outlier cluster outside of where the other clusters are located, meaning that the Combat method adjusts for the batch effects pretty well. The optimal cluster number given by BIC based on this transformation method is 8, which does not agree with the 3 clusters claimed by the paper's algorithm. 
+From the Figure above, we can see that the heuristic clustering and the mclustering give similar results. An interesting fact to notice is that the lower left graph of this figure compared to the last one, does not have an obvious outlier cluster outside of where the other clusters are located, meaning that the Combat method adjusts for the batch effects pretty well. The optimal cluster number given by BIC based on this transformation method is 5, which does not agree with the 3 clusters claimed by the paper's algorithm. However the true number of subtypes is 5.
 
 ## Summary of Results 
   Compared to Figure 6, the quantile norm transformation of the concatonated data produced results most in agreement with Figure 6. The quantile normalization resulted in four latent subtypes and the number of samples in each subtype is similar to the results from the CoiNcIDE method (Figure 6A). Additionally, the quantile normalized data removed potential batch effects that was seen in a naive norm transformation of the data. The norm transformed data did not match the results of the paper at all, producing 9 latent subtypes. 
-  Additionally, we performed a batch means centering and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means censoring did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. The number of identified subtypes from the ComBat transformed data was eight, which also did not match with the paper's result. However the population distribution of the 4 largest clusters are similar to the ground truth, and we suspect that our clustering algorithm over-classified some cancer subtypes into further smaller groups. 
+  Additionally, we performed a batch means centering and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means centering did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. The number of identified subtypes from the ComBat transformed data was five, which also did not match with the paper's result, but is closer. Five clusters agrees with the true number of subtypes in the ground truth population.
   Thus, we were able to identify that CoiNcIDE method is most similar to using `mclust` on quantile normalized data and that the batch means and ComBat transformation produce similar results. However, it is not clear from our project analysis that CoiNcIDE is a better method than concatonating the data and running `mclust`. 
 
 #References
