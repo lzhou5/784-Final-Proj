@@ -336,7 +336,7 @@ clustering2(data.normcat, "Norm Transform")
   From the Figure above, we can see that the heuristic clustering and the mclustering are similar, in that there are approximately distinct 9 groups (with some discrepancy with the blue and orange clusters). From the BIC criteria, the best number of clusters is 9. As we can see in the lower left of the figure, there are two distinct clusters (pink and grey), whereas the remaining cluster centroids are overlapping. One of these clusters is most likely from Study 18728, since it was not transformed in with the norm transform (log2(count+1)). Compared to the CoiNcIDE result in Figure 6A and B, we can see that this simple norm transformed data does not agree with the results from the paper. Using `mclust` and `hclust`, we get a lot more clusters (compared to the paper's results of 3 and 4 clusters, respecitively). 
   
 ## Task 3: Clustering within Quantile Normalized Concatenated Dataset
-  The quantile normalization is the most heavy handed type of normalization. 
+  The quantile normalization is the most heavy handed type of normalization, in which quantiles from all 17 studies were forced to match.
 ```{r, message=FALSE}
 #===================================# Task 3 #=====================================#
 # Quantile Normalization each study, concatenate, run hclust /mclust
@@ -346,20 +346,20 @@ clustering2(data.normcat, "Norm Transform")
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
 
-# performing quantile normalization on each study
-data.quant <- lapply(1:length(data.uncat), function(i) normalize.quantiles(data.uncat[[i]], copy=TRUE))
+# performing quantile normalization within each study (using normalization in blocks within the contatenated dataset)
+data.ncat1 <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
-par(mfrow=c(4, 4))
-for(i in 1:16)
- hist(unlist(data.quant[[i]]), main=paste("Study", i), xlab="counts")
-par(mfrow=c(1,1))
-
-# merging them into one concatenated dataset
-data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
+block.size <- sapply(1:length(data.quant), function(i) dim(data.quant[[i]])[2])
+data.qnormcat0 <- normalize.quantiles.in.blocks(t(data.ncat1), blocks=rep(1:17, times=block.size))
+data.qnormcat0 <- normalize.quantiles(data.ncat1)
+data.qnormcat <- t(data.qnormcat0)
 
 # clustering with hclust and mclust
-c <- clustering2(data.qnormcat, "Quantile Normalized")
+c <- clustering2(data.qnormcat0, "Quantile Normalized")
 ```
+
+While the quantile normalization felt restrictive, it actually matched the clustering results of 'hclust' very well
+
 
 ## Task 4: Clustering within Batch Mean Centered Concatonated Dataset
 In this task we are interested in transforming the data by the method called `Batch Mean Centering`. Batch mean centering transforms the observation $x_{ij}^k$ from gene $i$, sample $j$ and study $k$ by the formula:
