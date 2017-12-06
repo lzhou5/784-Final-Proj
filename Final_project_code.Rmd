@@ -357,9 +357,9 @@ data.ncat1 <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
 block.size <- sapply(1:length(data.quant), function(i) dim(data.quant[[i]])[2])
 data.qnormcat0 <- normalize.quantiles.in.blocks(t(data.ncat1), blocks=rep(1:17, times=block.size))
-
+data.qnormcat <- t(data.qnormcat0)
 # clustering with hclust and mclust
-c <- clustering2(data.qnormcat0, "Quantile Normalized")
+c <- clustering2(data.qnormcat, "Quantile Normalized")
 ```
 
 While the quantile normalization felt restrictive, it actually matched the clustering results of 'hclust' very well. The quantile normalization recovered the same number of latent subtypes as CoINcIDE, and even had similar counts among those latent subtypes. Notably, the quantile normalization seemed to work around the potential batch effects seen in the norm-transform method discussed above. Therefore, we believe that the two datasets that had already been transformed are being used here to inform the 4 subtypes, rather than being treated as their own subtypes.
