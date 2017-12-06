@@ -1,22 +1,21 @@
 ---
 title: "Final project code"
-author: "Names"
+author: "Laura Zhou, Shaina Mitchell, Peiyao Wang"
 date: "11/16/2017"
 output: html_document
 ---
 # Introduction 
   For our final project, we aimed to confirm and explore the results in Figure 6 of the paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets." We are interested in identifiying latent subtypes in breast cancer and explore how `hclust` and `mclust` results compare with the new CoINcIDE method. 
   
-##Background on Breast Cancer
+## Background on Breast Cancer
 Breast cancer is a heterogeneous disease composed of a growing number of recognized biological subtypes. One way to detect cancer subtypes is through the analysis of gene expression. Detecting cancer subtypes can be beneficial to both the medical and statistical industry. Gene expression studies using DNA microarrays have identified several distinct breast cancer subtypes; these subtypes differ markedly in prognosis and in the repertoire of therapeutic targets they express. Gene expression patterns can stratify patients into subtypes with distinct survival patterns; such subtypes have the potential to drive personalized patient treatment regimens and risk prediction models. 
 
 
 
-##CoiNcide Paper Reivew
+## CoiNcide Paper Reivew
   The paper "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets" uses the dataset `curatedBreastData`, which is available as an R package. This paper presents a new method, CoINcIDE, which identifies patient subtypes through unsupervised clustering across multiple datasets. This provides more clinical utliltity that most current methods are unable to repliate. CoINcIDE discovers replicable patient subtypes by finding agreement across dataset-specific clusterings from multiple datasets. It clusters individual datasets, represented as nodes in a network, and assigns edges between similar clusters across data sets to create a network, then it identifies the subtypes through community detection. These final subtypes are defined by meta-clusters of tightly connected clusters within this network. An additional advantage of CoINcIDE is that it requires no between-dataset transformations. 
 
-##Project Objectives
-Peiyao
+## Project Objectives
   The primary objectives our our paper were to (1) to determine number of latent subtypes, (2) to determine number of samples in each subtype, and (3) compare with COINCIDE paper. Specifically, we want to explore the effect of transformations on the subtype clusters by comparing clustering results of hclust and mclustBIC.
 
 \begin{enumerate}
@@ -28,12 +27,21 @@ Peiyao
 \end{enumerate}
 
   
-##Figure 6 Discussion
-Shaina
-  *include why we use mclust
-  
-# Data Managment 
-Shaina
+## Figure 6 Discussion
+We decided to recreate Figure 6 from the paper for our project. This figure demonstrates the clustering that resulted from using various clustering techniques: the proprietary CoINcIDE technique, naive clustering with no transformation, Batch Mean Centering, and ComBat. The idea in the paper was to try to recover the established PAM50 subtypes. In the event of differences, the results would be used to suggest that unsupervised machine learning methods had predicted a more sentitive subtyping than the commonly accepted ones. While in class we learned about 'hclust' which heuristically groups units based on closeness characteristics, for this project we opted to use 'mclust' which is a model-based clustering algorithm so that we could use a criterion like BIC to select the number of classes, which is not possible with the results of 'hclust'. However, we recognize that the model may be incorrectly specified, and so for each clustering method we used in this project, we also included a figure comparing 'mclust' and 'hclust results.
+
+# Data Management 
+
+Data management of the CuratedBreastData involved applying three filters to achieve the same analysis dataset as was used in the study. The three criteria were:
+
+- only include datasets with at least 30 samples were to be included
+
+- only include datasets that included the minimum 35 genes of the PAM50 genes 
+
+- within a dataset, in the event that information on a gene was collected more than once, only include the version with the highest variance
+
+These filtering steps resulted in the attrition from 34 original datasets to 17 datasets to be used for the subsequent analysis.
+
 ```{r message=FALSE}
 #source("https://bioconductor.org/biocLite.R")
 #biocLite("curatedBreastData")
@@ -162,7 +170,7 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
                                                   return(d2)})
-## NOTE:!!! This is something I corrected for in the clustering2 function​
+## NOTE:!!! This is something I corrected for in the clustering2 function
 # there are na values in the 12th and 13th study
 # find where the na values are and remove those
 # 12
@@ -182,7 +190,7 @@ data.uncat[[13]] = data.uncat[[13]][, -unique(colid.na.13)]
 ```
 
 # Data Analysis 
-Laura
+
   To observe our final 17 datasets, we create histograms for each study of the counts, summarized in Figure 1 below. 
 ```{r, message=FALSE}
 #Figure 1
@@ -289,7 +297,7 @@ save(clustList,file="clustList")
   
   We then use the object `clustList` to summarize the total number of clusters within each study and the number of samples within each cluster. As seen below, the number of clusters in each study ranges from 2 to 9 clusters. The most common number of clusters (determined by BIC) is 4. 
   
-```{r, message=FALSE}
+```{r, eval=FALSE}
 #===================================# Task 1 #=====================================#
 load("clustList")
 
@@ -305,7 +313,7 @@ par(mfrow=c(1,1))
 ```
 
   
-##Task 2: Clustering within Normtransformed Concatonated dataset
+## Task 2: Clustering within Normtransformed Concatonated dataset
   In Task 2, we are interested in the number of clusters in the concatonated data of all the studies. Each study is first normtransformed before we concatonate and then figure out the latent clusters. 
 ```{r, message=FALSE}
 #===================================# Task 2 #=====================================#
@@ -327,8 +335,8 @@ clustering2(data.normcat, "Norm Transform")
 
   From the Figure above, we can see that the heuristic clustering and the mclustering are similar, in that there are approximately distinct 9 groups (with some discrepancy with the blue and orange clusters). From the BIC criteria, the best number of clusters is 9. As we can see in the lower left of the figure, there are two distinct clusters (pink and grey), whereas the remaining cluster centroids are overlapping. One of these clusters is most likely from Study 18728, since it was not transformed in with the norm transform (log2(count+1)). Compared to the CoiNcIDE result in Figure 6A and B, we can see that this simple norm transformed data does not agree with the results from the paper. Using `mclust` and `hclust`, we get a lot more clusters (compared to the paper's results of 3 and 4 clusters, respecitively). 
   
-##Task 3: Clustering within Quantile Normalized Concatenated Dataset
-  The quantile normalization is the most heavy handed type of normalization. 
+## Task 3: Clustering within Quantile Normalized Concatenated Dataset
+  The quantile normalization is the most heavy handed type of normalization, in which quantiles from all 17 studies were forced to match.
 ```{r, message=FALSE}
 #===================================# Task 3 #=====================================#
 # Quantile Normalization each study, concatenate, run hclust /mclust
@@ -338,20 +346,24 @@ clustering2(data.normcat, "Norm Transform")
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
 
-# performing quantile normalization on each study
-data.quant <- lapply(1:length(data.uncat), function(i) normalize.quantiles(data.uncat[[i]], copy=TRUE))
+data.quant <- vector("list", 17)
+for(i in c(1:11, 13:17)){
+data.quant[[i]] <- log2(data.uncat[[i]] + 1)
+}
+data.quant[[12]] <- data.uncat[[12]]
 
-par(mfrow=c(4, 4))
-for(i in 1:16)
- hist(unlist(data.quant[[i]]), main=paste("Study", i), xlab="counts")
-par(mfrow=c(1,1))
+# performing quantile normalization within each study (using normalization in blocks within the contatenated dataset)
+data.ncat1 <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
-# merging them into one concatenated dataset
-data.qnormcat <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
+block.size <- sapply(1:length(data.quant), function(i) dim(data.quant[[i]])[2])
+data.qnormcat0 <- normalize.quantiles.in.blocks(t(data.ncat1), blocks=rep(1:17, times=block.size))
 
 # clustering with hclust and mclust
-c <- clustering2(data.qnormcat, "Quantile Normalized")
+c <- clustering2(data.qnormcat0, "Quantile Normalized")
 ```
+
+While the quantile normalization felt restrictive, it actually matched the clustering results of 'hclust' very well. The quantile normalization recovered the same number of latent subtypes as CoINcIDE, and even had similar counts among those latent subtypes. Notably, the quantile normalization seemed to work around the potential batch effects seen in the norm-transform method discussed above. Therefore, we believe that the two datasets that had already been transformed are being used here to inform the 4 subtypes, rather than being treated as their own subtypes.
+
 
 ## Task 4: Clustering within Batch Mean Centered Concatonated Dataset
 In this task we are interested in transforming the data by the method called `Batch Mean Centering`. Batch mean centering transforms the observation $x_{ij}^k$ from gene $i$, sample $j$ and study $k$ by the formula:
@@ -378,7 +390,7 @@ clustering2(data.bmccat, "BMC")
 
 From the Figure above, we can see that the  `hclust` and the `mclustBIC` give similar results. From the lower left graph, we can see that most detected clusters are within the black oval, and there are one cluster outside of the black oval whose sample points are characterized by the cross sign. We suspect this to be the study 18728. Compared to the results from the paper, our clustering methods detect the 9 clusters, which is more than the 2 clusters given by the paper. 
 
-##Task 5: Clustering within ComBat Transformed Dataset
+## Task 5: Clustering within ComBat Transformed Dataset
 In this task we are interested in transforming the data by the method called `ComBat`. The transformation is fulfilled by the R package `sva`. The general idea behind ComBat transformation is that it estimates the parameters of a model for mean and variance for each gene and then adjusts the genes in each batch to meet the assumed model:
 \[x_{ij}^k = \alpha_i + C \beta_i + \gamma_i^k + \delta_i^k \epsilon_{ij}^k.\]
 The theory that backs up this model is Empirical Bayes. As in the last task, we first transform the data by the $\log2$ transformation. We generate the study id in a vector as one input in the function `ComBat` as we show below:
@@ -399,9 +411,14 @@ clustering2(data.normComBat, "normComBat")
 From the Figure above, we can see that the heuristic clustering and the mclustering give similar results. An interesting fact to notice is that the lower left graph of this figure compared to the last one, does not have an obvious outlier cluster outside of where the other clusters are located, meaning that the Combat method adjusts for the batch effects pretty well. The optimal cluster number given by BIC based on this transformation method is 5, which does not agree with the 3 clusters claimed by the paper's algorithm. However the true number of subtypes is 5.
 
 ## Summary of Results 
+<<<<<<< HEAD
   Compared to Figure 6, the quantile norm transformation of the concatonated data produced results most in agreement with Figure 6. The quantile normalization resulted in four latent subtypes and the number of samples in each subtype is similar to the results from the CoiNcIDE method (Figure 6A). Additionally, the quantile normalized data removed potential batch effects that was seen in a naive norm transformation of the data. The norm transformed data did not match the results of the paper at all, producing 9 latent subtypes. 
   Additionally, we performed a batch means centering and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means centering did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. The number of identified subtypes from the ComBat transformed data was five, which also did not match with the paper's result, but is closer. Five clusters agrees with the true number of subtypes in the ground truth population.
+=======
+  Compared to Figure 6, the quantile norm transformation of the concatonated data produced results most in agreement with Figure 6. The quantile normalization resulted in four latent subtypes and the number of samples in each subtype is similar to the results from the CoiNcIDE method (Figure 6A). Additionally, the quantile normalized data removed potential batch effects that was seen in a naive norm transformation of the data, and recovered the same number of latent subtypes as the prorpietary CoINcIDE method. The norm transformed data did not match the results of the paper at all, producing 9 latent subtypes. 
+  Additionally, we performed a batch means centering and ComBat transform as in Figure 6C and Figure 6D. The `mclustBIC` of the batch means censoring did not match the results from the paper; it identified six latent subtypes compared to the two latent subtypes from the paper. The number of identified subtypes from the ComBat transformed data was eight, which also did not match with the paper's result. However the population distribution of the 4 largest clusters are similar to the ground truth, and we suspect that our clustering algorithm over-classified some cancer subtypes into further smaller groups. 
+>>>>>>> 8bd89ccd31640fc480b6233599b8cd307da7e889
   Thus, we were able to identify that CoiNcIDE method is most similar to using `mclust` on quantile normalized data and that the batch means and ComBat transformation produce similar results. However, it is not clear from our project analysis that CoiNcIDE is a better method than concatonating the data and running `mclust`. 
 
-#References
+# References
 1. Planey CR and Gevaert O. "CoINcIDE: A framework for discovery of patient subtypes across multiple datasets". Genome Medicine. 2016; 8:27
