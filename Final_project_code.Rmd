@@ -1,6 +1,6 @@
 ---
 title: "Final project code"
-author: "Laura Zhou, Shaina Mitchell, Peiyao"
+author: "Laura Zhou, Shaina Mitchell, Peiyao Wang"
 date: "11/16/2017"
 output: html_document
 ---
@@ -170,7 +170,7 @@ data.uncat <- lapply(1:length(dat), function(i) {d <- data.ready(dat[[i]])
                                                   colnames(d2) <- paste(i, "_", colnames(d2), sep="")
                                                   rownames(d2) <- n.d
                                                   return(d2)})
-## NOTE:!!! This is something I corrected for in the clustering2 function​
+## NOTE:!!! This is something I corrected for in the clustering2 function
 # there are na values in the 12th and 13th study
 # find where the na values are and remove those
 # 12
@@ -297,7 +297,7 @@ save(clustList,file="clustList")
   
   We then use the object `clustList` to summarize the total number of clusters within each study and the number of samples within each cluster. As seen below, the number of clusters in each study ranges from 2 to 9 clusters. The most common number of clusters (determined by BIC) is 4. 
   
-```{r, message=FALSE}
+```{r, eval=FALSE}
 #===================================# Task 1 #=====================================#
 load("clustList")
 
@@ -346,13 +346,17 @@ clustering2(data.normcat, "Norm Transform")
 #normalize.quantiles(x,copy=TRUE) package: PreprocessCore
 library(preprocessCore)
 
+data.quant <- vector("list", 17)
+for(i in c(1:11, 13:17)){
+data.quant[[i]] <- log2(data.uncat[[i]] + 1)
+}
+data.quant[[12]] <- data.uncat[[12]]
+
 # performing quantile normalization within each study (using normalization in blocks within the contatenated dataset)
 data.ncat1 <- Reduce(function(x,y) t(merge(t(x),t(y),all=T)), data.quant)
 
 block.size <- sapply(1:length(data.quant), function(i) dim(data.quant[[i]])[2])
 data.qnormcat0 <- normalize.quantiles.in.blocks(t(data.ncat1), blocks=rep(1:17, times=block.size))
-data.qnormcat0 <- normalize.quantiles(data.ncat1)
-data.qnormcat <- t(data.qnormcat0)
 
 # clustering with hclust and mclust
 c <- clustering2(data.qnormcat0, "Quantile Normalized")
@@ -385,7 +389,7 @@ clustering2(data.bmccat, "BMC")
 
 From the Figure above, we can see that the  `hclust` and the `mclustBIC` give similar results. From the lower left graph, we can see that most detected clusters are within the black oval, and there are one cluster outside of the black oval whose sample points are characterized by the cross sign. We suspect this to be the study 18728. Compared to the results from the paper, our clustering methods detect the 9 clusters, which is more than the 2 clusters given by the paper. 
 
-##Task 5: Clustering within ComBat Transformed Dataset
+## Task 5: Clustering within ComBat Transformed Dataset
 In this task we are interested in transforming the data by the method called `ComBat`. The transformation is fulfilled by the R package `sva`. The general idea behind ComBat transformation is that it estimates the parameters of a model for mean and variance for each gene and then adjusts the genes in each batch to meet the assumed model:
 \[x_{ij}^k = \alpha_i + C \beta_i + \gamma_i^k + \delta_i^k \epsilon_{ij}^k.\]
 The theory that backs up this model is Empirical Bayes. As in the last task, we first transform the data by the $\log2$ transformation. We generate the study id in a vector as one input in the function `ComBat` as we show below:
